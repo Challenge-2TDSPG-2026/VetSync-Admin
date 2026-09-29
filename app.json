@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "VetSync-Admin",
+    "slug": "vetsync-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "vetsyncadmin",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0e3326"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vetsync.admin"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0e3326"
+      },
+      "package": "com.vetsync.admin"
+    },
+    "web": {
+      "favicon": "./assets/icon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router"]
+  }
+}
