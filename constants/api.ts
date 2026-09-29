@@ -3,7 +3,7 @@ function normalizarBaseUrl(url: string | undefined, padrao: string): string {
   return valor ? valor.replace(/\/+$/, '') : padrao;
 }
 
-const DEFAULT_API_BASE_URL = 'http://localhost:8080';
+const DEFAULT_API_BASE_URL = 'https://vetsync-java.onrender.com';
 
 // EXPO_PUBLIC_* é incorporada no bundle durante o build.
 // Nunca use esta variável para segredos: seu conteúdo fica público no app.
