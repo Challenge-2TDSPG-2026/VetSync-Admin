@@ -34,6 +34,7 @@ export default function LoginScreen() {
       await login(email, senha);
     } catch (e) {
       setErro(mensagemDeErro(e, 'Não foi possível entrar. Tente novamente.'));
+      setSenha('');
     } finally {
       setAutenticando(false);
     }

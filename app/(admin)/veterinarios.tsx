@@ -18,6 +18,7 @@ export default function VeterinariosScreen() {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [idClinica, setIdClinica] = useState('');
+  const [especialidade, setEspecialidade] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [criado, setCriado] = useState<NovoUsuarioResposta | null>(null);
 
@@ -45,12 +46,13 @@ export default function VeterinariosScreen() {
     setSalvando(true);
     setCriado(null);
     try {
-      const res = await adminService.criarVeterinario(nome, email, Number(idClinica));
+      const res = await adminService.criarVeterinario(nome, email, Number(idClinica), especialidade);
       mostrarToast('sucesso', `Veterinário ${res.nome} cadastrado`, `CRM ${res.crm}`);
       setCriado(res);
       setNome('');
       setEmail('');
       setIdClinica('');
+      setEspecialidade('');
       carregar();
     } catch (e) {
       mostrarToast('erro', mensagemDeErro(e));
@@ -80,6 +82,7 @@ export default function VeterinariosScreen() {
         <Field label="Nome" value={nome} onChangeText={setNome} placeholder="Nome completo" />
         <Field label="E-mail" value={email} onChangeText={setEmail} placeholder="email@clinica.com" autoCapitalize="none" keyboardType="email-address" />
         <Field label="ID da clínica" value={idClinica} onChangeText={setIdClinica} placeholder="1" keyboardType="numeric" />
+        <Field label="Especialidade (opcional)" value={especialidade} onChangeText={setEspecialidade} placeholder="Ex.: Dermatologia" />
 
         <Button
           label={salvando ? 'Cadastrando…' : 'Cadastrar veterinário'}
@@ -98,6 +101,7 @@ export default function VeterinariosScreen() {
             <RecordHeader id={v.idVeterinario} title={v.nmVeterinario} />
             <RecordLine label="CRM" value={v.nrCrmv} />
             <RecordLine label="E-mail" value={v.dsEmail} />
+            <RecordLine label="Especialidade" value={v.dsEspecialidade || '—'} />
             <RecordLine label="Clínica" value={v.nmClinica || `#${v.idClinica}`} />
           </RecordRow>
         ))}

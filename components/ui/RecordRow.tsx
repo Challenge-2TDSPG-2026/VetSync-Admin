@@ -29,6 +29,16 @@ export function RecordLine({ label, value }: { label: string; value: React.React
   );
 }
 
+/** Texto longo em bloco (sem truncar), com o rótulo acima. */
+export function RecordBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={s.block}>
+      <Text style={s.lineLabel}>{label}</Text>
+      <Text style={s.blockValue}>{value}</Text>
+    </View>
+  );
+}
+
 export function RecordActions({ children }: { children: React.ReactNode }) {
   return <View style={s.actions}>{children}</View>;
 }
@@ -48,5 +58,7 @@ const s = StyleSheet.create({
   line: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: 6 },
   lineLabel: { fontSize: 11.5, fontWeight: '700', color: CORES.textoSecundario, textTransform: 'uppercase', letterSpacing: 0.3 },
   lineValue: { fontSize: 13, color: CORES.texto, flexShrink: 1, textAlign: 'right' },
+  block: { marginTop: 10 },
+  blockValue: { fontSize: 13.5, color: CORES.texto, lineHeight: 19, marginTop: 4 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 14 },
 });

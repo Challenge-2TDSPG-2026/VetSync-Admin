@@ -47,6 +47,8 @@ export default function TiposEventoScreen() {
           <RecordHeader id={t.idTipoEvento} title={t.nmTipoEvento} />
           <RecordLine label="Categoria" value={t.dsCategoria} />
           <RecordLine label="Pontos" value={`${t.nrPontos} pts`} />
+          <RecordLine label="Modalidade" value={t.dsModalidadeAgendamento || '—'} />
+          <RecordLine label="Duração" value={t.nrDuracaoMinutos != null ? `${t.nrDuracaoMinutos} min` : '—'} />
         </RecordRow>
       ))}
     </Screen>

@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { adminService } from '../../services/adminService';
 import type { Medicamento } from '../../types';
 import { mensagemDeErro } from '../../utils/erro';
+import { confirmar } from '../../utils/confirmar';
 import { mostrarToast } from '../../components/ui/Toast';
 import { Screen, LoadingBlock } from '../../components/Screen';
 import { Card, CardTitle, Field, Banner } from '../../components/ui/Card';
@@ -11,18 +12,6 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { RecordActions, RecordHeader, RecordLine, RecordRow } from '../../components/ui/RecordRow';
 
 const FORM_VAZIO = { nmMedicamento: '', dsPrincipio: '', vlPrecoRef: '' };
-
-function confirmar(mensagem: string): Promise<boolean> {
-  if (Platform.OS === 'web') {
-    return Promise.resolve(window.confirm(mensagem));
-  }
-  return new Promise((resolve) => {
-    Alert.alert('Confirmar', mensagem, [
-      { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Remover', style: 'destructive', onPress: () => resolve(true) },
-    ]);
-  });
-}
 
 export default function MedicamentosScreen() {
   const [lista, setLista] = useState<Medicamento[] | null>(null);

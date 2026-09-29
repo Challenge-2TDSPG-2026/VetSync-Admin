@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { adminService } from '../../services/adminService';
 import type { LancamentoPontos } from '../../types';
-import { mensagemDeErro } from '../../utils/erro';
+import { ehConflito, mensagemDeErro } from '../../utils/erro';
 import { mostrarToast } from '../../components/ui/Toast';
 import { Screen, LoadingBlock } from '../../components/Screen';
 import { Banner } from '../../components/ui/Card';
@@ -42,6 +42,7 @@ export default function PontosScreen() {
       setLista((prev) => prev?.filter((l) => l.idLancamento !== id) ?? null);
     } catch (e) {
       mostrarToast('erro', mensagemDeErro(e));
+      if (ehConflito(e)) carregar();
     } finally {
       setProcessando(null);
     }

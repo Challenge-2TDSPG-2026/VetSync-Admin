@@ -1,4 +1,4 @@
-import { api } from './api/httpClient';
+import { api, apiRequest } from './api/httpClient';
 import type { Sessao } from '../context/AuthContext';
 
 export const authService = {
@@ -6,11 +6,13 @@ export const authService = {
     return api.post<Sessao>('/auth/login', { email: email.trim().toLowerCase(), senha }, false);
   },
 
-  async me(): Promise<Sessao> {
-    return api.get<Sessao>('/auth/me');
+  /** O backend NÃO devolve o token em /auth/me. */
+  async me(): Promise<Omit<Sessao, 'token'>> {
+    return api.get<Omit<Sessao, 'token'>>('/auth/me');
   },
 
+  /** Timeout curto: o logout remoto não pode travar o logout local. */
   async logout(): Promise<void> {
-    await api.post('/auth/logout');
+    await apiRequest({ method: 'POST', path: '/auth/logout', timeoutMs: 5_000 });
   },
 };

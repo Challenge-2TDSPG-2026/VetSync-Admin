@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { adminService } from '../../services/adminService';
 import type { Prescricao } from '../../types';
-import { mensagemDeErro } from '../../utils/erro';
+import { ehConflito, mensagemDeErro } from '../../utils/erro';
+import { confirmar } from '../../utils/confirmar';
 import { mostrarToast } from '../../components/ui/Toast';
 import { Screen, LoadingBlock } from '../../components/Screen';
 import { Banner } from '../../components/ui/Card';
@@ -35,6 +36,10 @@ export default function PrescricoesScreen() {
   }
 
   async function decidir(id: number, aprovado: boolean) {
+    if (!aprovado) {
+      const ok = await confirmar('Negar esta prescrição? A decisão é definitiva e não poderá ser desfeita.', 'Negar');
+      if (!ok) return;
+    }
     setProcessando(id);
     try {
       await adminService.liberarPrescricao(id, aprovado);
@@ -42,6 +47,8 @@ export default function PrescricoesScreen() {
       setLista((prev) => prev?.filter((p) => p.idPrescricao !== id) ?? null);
     } catch (e) {
       mostrarToast('erro', mensagemDeErro(e));
+      // 409: já foi decidida — sincroniza a fila.
+      if (ehConflito(e)) carregar();
     } finally {
       setProcessando(null);
     }
@@ -71,7 +78,7 @@ export default function PrescricoesScreen() {
           <RecordLine label="Período" value={p.dtFim ? `${p.dtInicio} → ${p.dtFim}` : p.dtInicio} />
           <RecordActions>
             <Button label="Liberar" variant="approve" size="sm" onPress={() => decidir(p.idPrescricao, true)} loading={processando === p.idPrescricao} disabled={processando !== null} />
-            <Button label="Negar" variant="deny" size="sm" onPress={() => decidir(p.idPrescricao, false)} loading={false} disabled={processando !== null} />
+            <Button label="Negar" variant="deny" size="sm" onPress={() => decidir(p.idPrescricao, false)} disabled={processando !== null} />
           </RecordActions>
         </RecordRow>
       ))}

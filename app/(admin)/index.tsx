@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { adminService } from '../../services/adminService';
 import { CORES } from '../../constants/theme';
 import { Screen } from '../../components/Screen';
+import { Banner } from '../../components/ui/Card';
 import { AppIcon } from '../../components/AppIcon';
 
 interface Item {
@@ -18,42 +19,56 @@ interface Item {
 
 interface Counts {
   prescricoes: number | null;
+  relatorios: number | null;
   pontos: number | null;
   vets: number | null;
   esteticistas: number | null;
   medicamentos: number | null;
+  recompensas: number | null;
 }
 
 const ITENS: Item[] = [
   { href: '/(admin)/prescricoes', icon: 'medkit-outline', label: 'Prescrições', desc: 'Fila de aprovação', countKey: 'prescricoes', accent: CORES.aviso },
+  { href: '/(admin)/relatorios-estetica', icon: 'document-text-outline', label: 'Relatórios de estética', desc: 'Fila de aprovação', countKey: 'relatorios', accent: CORES.aviso },
   { href: '/(admin)/pontos', icon: 'sparkles-outline', label: 'Pontos', desc: 'Lançamentos pendentes', countKey: 'pontos', accent: CORES.aviso },
   { href: '/(admin)/veterinarios', icon: 'medical-outline', label: 'Veterinários', desc: 'Equipe clínica', countKey: 'vets' },
   { href: '/(admin)/estetica', icon: 'cut-outline', label: 'Estética', desc: 'Equipe de estética', countKey: 'esteticistas' },
   { href: '/(admin)/medicamentos', icon: 'flask-outline', label: 'Medicamentos', desc: 'Catálogo', countKey: 'medicamentos' },
+  { href: '/(admin)/recompensas', icon: 'gift-outline', label: 'Recompensas', desc: 'Catálogo de resgates', countKey: 'recompensas' },
   { href: '/(admin)/tipos-evento', icon: 'list-outline', label: 'Tipos de evento', desc: 'Catálogo (leitura)' },
+  { href: '/(admin)/tipos-vacina', icon: 'bandage-outline', label: 'Tipos de vacina', desc: 'Cadastrar catálogo' },
+  { href: '/(admin)/buscar-pet', icon: 'search-outline', label: 'Buscar pet', desc: 'Consulta por número' },
+  { href: '/(admin)/auditoria', icon: 'time-outline', label: 'Auditoria', desc: 'Histórico de alterações' },
   { href: '/(admin)/administradores', icon: 'shield-checkmark-outline', label: 'Administradores', desc: 'Cadastrar acesso' },
 ];
 
+const CONTADORES_DE_FILA: (keyof Counts)[] = ['prescricoes', 'relatorios', 'pontos'];
+
 export default function Dashboard() {
-  const { sessao } = useAuth();
+  const { sessao, semConexao } = useAuth();
   const router = useRouter();
-  const [counts, setCounts] = useState<Counts>({ prescricoes: null, pontos: null, vets: null, esteticistas: null, medicamentos: null });
+  const [counts, setCounts] = useState<Counts>({ prescricoes: null, relatorios: null, pontos: null, vets: null, esteticistas: null, medicamentos: null, recompensas: null });
   const [refreshing, setRefreshing] = useState(false);
 
   const carregar = useCallback(async () => {
-    const [prescricoes, pontos, vets, esteticistas, medicamentos] = await Promise.all([
-      adminService.listarPrescricoesPendentes().catch(() => []),
-      adminService.listarPontosPendentes().catch(() => []),
-      adminService.listarVeterinarios().catch(() => []),
-      adminService.listarProfissionaisEstetica().catch(() => []),
-      adminService.listarMedicamentos().catch(() => []),
+    // Falha vira null (contador "—"), para uma API fora do ar não parecer "0 pendências".
+    const [prescricoes, relatorios, pontos, vets, esteticistas, medicamentos, recompensas] = await Promise.all([
+      adminService.listarPrescricoesPendentes().catch(() => null),
+      adminService.listarRelatoriosPendentes().catch(() => null),
+      adminService.listarPontosPendentes().catch(() => null),
+      adminService.listarVeterinarios().catch(() => null),
+      adminService.listarProfissionaisEstetica().catch(() => null),
+      adminService.listarMedicamentos().catch(() => null),
+      adminService.listarRecompensas().catch(() => null),
     ]);
     setCounts({
-      prescricoes: prescricoes.length,
-      pontos: pontos.length,
-      vets: vets.length,
-      esteticistas: esteticistas.length,
-      medicamentos: medicamentos.length,
+      prescricoes: prescricoes?.length ?? null,
+      relatorios: relatorios?.length ?? null,
+      pontos: pontos?.length ?? null,
+      vets: vets?.length ?? null,
+      esteticistas: esteticistas?.length ?? null,
+      medicamentos: medicamentos?.length ?? null,
+      recompensas: recompensas?.length ?? null,
     });
   }, []);
 
@@ -75,9 +90,14 @@ export default function Dashboard() {
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
+      {semConexao && (
+        <Banner tone="info">Não foi possível validar sua sessão com a API (sem conexão). Você continua logado, mas os dados podem estar desatualizados. Se o problema persistir, saia e entre novamente.</Banner>
+      )}
+
       <View style={s.pendingRow}>
-        <PendingPill label="Prescrições pendentes" value={counts.prescricoes} onPress={() => router.push('/(admin)/prescricoes')} />
-        <PendingPill label="Pontos pendentes" value={counts.pontos} onPress={() => router.push('/(admin)/pontos')} />
+        <PendingPill label="Prescrições" value={counts.prescricoes} onPress={() => router.push('/(admin)/prescricoes')} />
+        <PendingPill label="Relatórios" value={counts.relatorios} onPress={() => router.push('/(admin)/relatorios-estetica')} />
+        <PendingPill label="Pontos" value={counts.pontos} onPress={() => router.push('/(admin)/pontos')} />
       </View>
 
       <Text style={s.sectionTitle}>Gerenciar</Text>
@@ -93,7 +113,7 @@ export default function Dashboard() {
               <Text style={s.tileDesc}>{item.desc}</Text>
             </View>
             {count !== null && count !== undefined && count > 0 && (
-              <View style={[s.badge, item.countKey === 'prescricoes' || item.countKey === 'pontos' ? s.badgeWarn : undefined]}>
+              <View style={[s.badge, item.countKey && CONTADORES_DE_FILA.includes(item.countKey) ? s.badgeWarn : undefined]}>
                 <Text style={s.badgeText}>{count}</Text>
               </View>
             )}
@@ -116,7 +136,7 @@ function PendingPill({ label, value, onPress }: { label: string; value: number |
 }
 
 const s = StyleSheet.create({
-  pendingRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+  pendingRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
   pill: {
     flex: 1,
     backgroundColor: CORES.fundoCard,
@@ -125,7 +145,7 @@ const s = StyleSheet.create({
     borderColor: CORES.borda,
     borderLeftWidth: 4,
     borderLeftColor: CORES.secundaria,
-    padding: 16,
+    padding: 12,
   },
   pillWarn: { borderLeftColor: CORES.aviso },
   pillValue: { fontSize: 26, fontWeight: '800', color: CORES.texto },

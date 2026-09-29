@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system/legacy';
 import { API_BASE_URL } from '../../constants/api';
 import { STORAGE_KEYS } from '../../constants/storage';
 import { notificarExpiracaoSessao } from './sessionEvents';
@@ -21,11 +22,13 @@ interface RequestOptions {
   method: Metodo;
   path: string;
   body?: unknown;
+  /** Corpo multipart. Quando informado, o Content-Type NÃO é definido (o fetch gera o boundary). */
+  formData?: FormData;
   autenticado?: boolean;
   timeoutMs?: number;
 }
 
-async function obterToken(): Promise<string | null> {
+export async function obterToken(): Promise<string | null> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.SESSAO);
   if (!raw) return null;
   try {
@@ -60,10 +63,12 @@ export async function apiRequest<T = unknown>({
   method,
   path,
   body,
+  formData,
   autenticado = true,
   timeoutMs = 30_000,
 }: RequestOptions): Promise<T> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {};
+  if (!formData) headers['Content-Type'] = 'application/json';
 
   if (autenticado) {
     const token = await obterToken();
@@ -77,10 +82,11 @@ export async function apiRequest<T = unknown>({
     resposta = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: formData ?? (body !== undefined ? JSON.stringify(body) : undefined),
       signal: controller.signal,
     });
   } catch (erro) {
+    console.warn('Falha no fetch:', method, `${API_BASE_URL}${path}`, erro);
     if (erro instanceof Error && erro.name === 'AbortError') {
       throw new ApiError(0, 'A solicitação demorou mais que o esperado. Tente novamente.');
     }
@@ -101,7 +107,9 @@ export async function apiRequest<T = unknown>({
     corpo = texto;
   }
 
-  if (resposta.status === 401) {
+  // 401 só significa "sessão expirada" em chamadas autenticadas.
+  // No login, o 401 traz a mensagem real do backend (ex.: "E-mail ou senha inválidos").
+  if (resposta.status === 401 && autenticado) {
     notificarExpiracaoSessao();
     throw new ApiError(401, 'Sua sessão expirou. Entre novamente.');
   }
@@ -113,6 +121,8 @@ export async function apiRequest<T = unknown>({
   return corpo as T;
 }
 
+const TIMEOUT_UPLOAD_MS = 60_000;
+
 export const api = {
   get: <T>(path: string, autenticado = true) => apiRequest<T>({ method: 'GET', path, autenticado }),
   post: <T>(path: string, body?: unknown, autenticado = true) =>
@@ -123,4 +133,100 @@ export const api = {
     apiRequest<T>({ method: 'PATCH', path, body, autenticado }),
   delete: <T = void>(path: string, autenticado = true) =>
     apiRequest<T>({ method: 'DELETE', path, autenticado }),
+  postForm: <T>(path: string, formData: FormData) =>
+    apiRequest<T>({ method: 'POST', path, formData, timeoutMs: TIMEOUT_UPLOAD_MS }),
+  putForm: <T>(path: string, formData: FormData) =>
+    apiRequest<T>({ method: 'PUT', path, formData, timeoutMs: TIMEOUT_UPLOAD_MS }),
 };
+
+/**
+ * Upload multipart no app nativo (Android/iOS) usando o uploader nativo do Expo.
+ * Evita o FormData do React Native com arquivo ({ uri, name, type }), que falha com
+ * "Network request failed" em alguns aparelhos/versões. Na web continue usando api.postForm/putForm.
+ */
+export async function uploadNativo<T>({
+  method,
+  path,
+  campos,
+  arquivo,
+  campoArquivo = 'imagem',
+}: {
+  method: 'POST' | 'PUT';
+  path: string;
+  campos: Record<string, string>;
+  arquivo: { uri: string; type: string };
+  campoArquivo?: string;
+}): Promise<T> {
+  const token = await obterToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const url = `${API_BASE_URL}${path}`;
+  const resposta = await FileSystem.uploadAsync(url, arquivo.uri, {
+    httpMethod: method,
+    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+    fieldName: campoArquivo,
+    mimeType: arquivo.type,
+    parameters: campos,
+    headers,
+  }).catch((erro: unknown) => {
+    console.warn('Falha no upload nativo:', method, url, erro);
+    throw new ApiError(0, 'Não foi possível enviar a imagem. Verifique sua conexão e tente novamente.');
+  });
+
+  let corpo: unknown = null;
+  try {
+    corpo = resposta.body ? JSON.parse(resposta.body) : null;
+  } catch {
+    corpo = resposta.body;
+  }
+
+  if (resposta.status === 401) {
+    notificarExpiracaoSessao();
+    throw new ApiError(401, 'Sua sessão expirou. Entre novamente.');
+  }
+  if (resposta.status < 200 || resposta.status >= 300) {
+    throw extrairErro(resposta.status, corpo);
+  }
+  return corpo as T;
+}
+
+/**
+ * Baixa uma imagem protegida por JWT e devolve como data URI
+ * (ex.: "data:image/png;base64,...") para uso em <Image source={{ uri }} />.
+ * O `path` é o mesmo devolvido pela API em `imagemUrl` (ex.: /recompensas/3/imagem).
+ */
+export async function baixarImagemDataUri(path: string): Promise<string> {
+  const token = await obterToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_UPLOAD_MS);
+
+  let resposta: Response;
+  try {
+    resposta = await fetch(`${API_BASE_URL}${path}`, { headers, signal: controller.signal });
+  } catch {
+    throw new ApiError(0, 'Não foi possível baixar a imagem.');
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (resposta.status === 401) {
+    notificarExpiracaoSessao();
+    throw new ApiError(401, 'Sua sessão expirou. Entre novamente.');
+  }
+  if (!resposta.ok) {
+    throw new ApiError(resposta.status, 'Não foi possível baixar a imagem.');
+  }
+
+  const blob = await resposta.blob();
+
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Não foi possível ler a imagem.'));
+    reader.readAsDataURL(blob);
+  });
+}

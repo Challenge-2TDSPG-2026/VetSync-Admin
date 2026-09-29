@@ -5,7 +5,7 @@ import { ApiError } from '../services/api/httpClient';
 import { authService } from '../services/authService';
 import { assinarExpiracaoSessao } from '../services/api/sessionEvents';
 
-export type Perfil = 'TUTOR' | 'VETERINARIO' | 'ADMIN';
+export type Perfil = 'TUTOR' | 'VETERINARIO' | 'ADMIN' | 'PROFISSIONAL_ESTETICA';
 
 export interface Sessao {
   token: string;
@@ -20,6 +20,8 @@ type AuthContextValue = {
   autenticado: boolean;
   carregando: boolean;
   erro: string | null;
+  /** true quando a sessão foi restaurada do armazenamento sem conseguir revalidar (API fora do ar / sem rede). */
+  semConexao: boolean;
   login: (email: string, senha: string) => Promise<void>;
   logout: () => Promise<void>;
   limparErro: () => void;
@@ -45,22 +47,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [sessao, setSessao] = useState<Sessao | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [semConexao, setSemConexao] = useState(false);
 
   useEffect(() => {
     async function restaurarSessao() {
       const salva = await carregarSessaoSalva();
-      if (!salva) {
+      if (!salva || !salva.token) {
         setCarregando(false);
         return;
       }
-      // Revalida com a API: garante que o token ainda é válido e atualiza os dados do usuário.
+      // Revalida com a API e atualiza os dados do usuário, preservando o token salvo
+      // (GET /auth/me não devolve token).
       try {
-        const atual = await authService.me();
+        const dados = await authService.me();
+        const atual: Sessao = { ...salva, ...dados, token: salva.token };
         setSessao(atual);
+        setSemConexao(false);
         await salvarSessao(atual);
-      } catch {
-        await AsyncStorage.removeItem(STORAGE_KEYS.SESSAO);
-        setSessao(null);
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) {
+          // Token realmente inválido/expirado.
+          await AsyncStorage.removeItem(STORAGE_KEYS.SESSAO);
+          setSessao(null);
+        } else {
+          // Falha de rede, timeout ou erro 5xx: mantém a sessão salva e avisa.
+          setSessao(salva);
+          setSemConexao(true);
+        }
       } finally {
         setCarregando(false);
       }
@@ -71,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const encerrarSessaoLocal = useCallback(async () => {
     await AsyncStorage.removeItem(STORAGE_KEYS.SESSAO);
     setSessao(null);
+    setSemConexao(false);
   }, []);
 
   useEffect(() => {
@@ -85,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const resposta = await authService.login(email, senha);
       await salvarSessao(resposta);
       setSessao(resposta);
+      setSemConexao(false);
     } catch (e) {
       const mensagem = e instanceof ApiError ? e.message : 'Não foi possível entrar. Tente novamente.';
       setErro(mensagem);
@@ -93,8 +108,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    // 1) Revoga o token no servidor ENQUANTO ele ainda está no AsyncStorage
+    //    (o httpClient lê o token de lá para montar o Authorization).
+    try {
+      await authService.logout();
+    } catch {
+      // Falha no logout remoto não pode impedir o logout local.
+    }
+    // 2) Só então apaga a sessão local.
     await encerrarSessaoLocal();
-    authService.logout().catch(() => {});
   }, [encerrarSessaoLocal]);
 
   const limparErro = useCallback(() => setErro(null), []);
@@ -106,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         autenticado: sessao !== null,
         carregando,
         erro,
+        semConexao,
         login,
         logout,
         limparErro,
