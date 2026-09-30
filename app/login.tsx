@@ -15,12 +15,14 @@ import { mensagemDeErro } from '../utils/erro';
 import { CORES } from '../constants/theme';
 import { Banner, Field } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 
 const logo = require('../assets/logo.png');
 
 export default function LoginScreen() {
   const { login } = useAuth();
   const insets = useSafeAreaInsets();
+  const isDesktop = useIsDesktop();
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -42,42 +44,48 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={s.flex} keyboardShouldPersistTaps="handled">
-        <LinearGradient colors={[CORES.forest, CORES.night]} style={[s.hero, { paddingTop: insets.top + 40 }]}>
+      <ScrollView contentContainerStyle={[s.flex, isDesktop && s.row]} keyboardShouldPersistTaps="handled">
+        <LinearGradient
+          colors={[CORES.forest, CORES.night]}
+          style={[s.hero, isDesktop ? s.heroDesktop : { paddingTop: insets.top + 40 }]}
+        >
           <View style={[s.ring, { width: 260, height: 260, top: -80, left: -80 }]} />
           <View style={[s.ring, { width: 170, height: 170, bottom: -50, right: -40 }]} />
-          <Image source={logo} style={s.logo} resizeMode="contain" />
-          <Text style={s.marca}>VetSync-Admin</Text>
-          <Text style={s.heroSub}>
+          <Image source={logo} style={[s.logo, isDesktop && s.logoDesktop]} resizeMode="contain" />
+          <Text style={[s.marca, isDesktop && s.marcaDesktop]}>VetSync-Admin</Text>
+          <Text style={[s.heroSub, isDesktop && s.heroSubDesktop]}>
             Aprovação de prescrições, liberação de pontos e cadastro da equipe clínica.
           </Text>
         </LinearGradient>
 
-        <View style={s.formArea}>
-          <Text style={s.formTitle}>Entrar</Text>
-          <Text style={s.formSub}>Use as credenciais do seu acesso ADMIN.</Text>
+        <View style={[s.formArea, isDesktop && s.formAreaDesktop]}>
+          <View style={s.formInner}>
+            <Text style={s.formTitle}>Entrar</Text>
+            <Text style={s.formSub}>Use as credenciais do seu acesso ADMIN.</Text>
 
-          {erro && <Banner tone="error">{erro}</Banner>}
+            {erro && <Banner tone="error">{erro}</Banner>}
 
-          <Field
-            label="E-mail"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="admin@vetsync.com"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-          <Field
-            label="Senha"
-            value={senha}
-            onChangeText={setSenha}
-            placeholder="••••••••"
-            secureTextEntry
-            autoComplete="password"
-          />
+            <Field
+              label="E-mail"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="admin@vetsync.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+            />
+            <Field
+              label="Senha"
+              value={senha}
+              onChangeText={setSenha}
+              placeholder="••••••••"
+              secureTextEntry
+              autoComplete="password"
+              onSubmitEditing={handleSubmit}
+            />
 
-          <Button label={autenticando ? 'Entrando…' : 'Entrar'} onPress={handleSubmit} loading={autenticando} style={s.btn} />
+            <Button label={autenticando ? 'Entrando…' : 'Entrar'} onPress={handleSubmit} loading={autenticando} style={s.btn} />
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -86,6 +94,7 @@ export default function LoginScreen() {
 
 const s = StyleSheet.create({
   flex: { flexGrow: 1, backgroundColor: CORES.fundo },
+  row: { flexDirection: 'row' },
   hero: {
     paddingHorizontal: 30,
     paddingBottom: 44,
@@ -100,4 +109,13 @@ const s = StyleSheet.create({
   formTitle: { fontSize: 21, fontWeight: '800', color: CORES.texto },
   formSub: { fontSize: 13, color: CORES.textoSecundario, marginTop: 4, marginBottom: 20 },
   btn: { marginTop: 6 },
+
+  // Desktop: hero à esquerda, formulário centralizado à direita.
+  heroDesktop: { flex: 1, justifyContent: 'center', paddingHorizontal: 64, paddingVertical: 48 },
+  logoDesktop: { width: 120, height: 120, marginBottom: 24 },
+  marcaDesktop: { fontSize: 38 },
+  heroSubDesktop: { fontSize: 16, lineHeight: 24, maxWidth: 400, marginTop: 12 },
+  formAreaDesktop: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 48, paddingTop: 48, paddingBottom: 48 },
+  // Limita a largura do formulário em telas largas (desktop e tablet).
+  formInner: { width: '100%', maxWidth: 420, alignSelf: 'center' },
 });
