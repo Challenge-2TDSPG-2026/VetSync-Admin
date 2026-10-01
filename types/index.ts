@@ -33,6 +33,19 @@ export interface AdminCriado {
 }
 
 export type StatusDecisao = 'SOLICITADO' | 'LIBERADO' | 'NEGADO';
+/** Código legível apenas no momento da emissão; não é recuperável depois pela API. */
+export interface CodigoVinculoClinica {
+  idClinica: number;
+  nomeClinica: string;
+  codigo: string;
+}
+
+/** Dados mínimos de uma clínica disponíveis para administração. */
+export interface Clinica {
+  idClinica: number;
+  nomeClinica: string;
+}
+
 
 export interface Prescricao {
   idPrescricao: number;

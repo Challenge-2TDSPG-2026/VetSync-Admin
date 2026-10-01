@@ -3,6 +3,8 @@ import { api, uploadNativo } from './api/httpClient';
 import { anexarImagem } from '../utils/imagem';
 import type {
   AdminCriado,
+  Clinica,
+  CodigoVinculoClinica,
   EntidadeAuditoria,
   ExclusaoRecompensa,
   LancamentoPontos,
@@ -60,6 +62,15 @@ export const adminService = {
   criarAdmin(nome: string, email: string) {
     return api.post<AdminCriado>('/admins', { nome, email });
   },
+  // ---- Vínculo de clínica ----
+  listarClinicas() {
+    return api.get<Clinica[]>('/vinculos-clinica/clinicas');
+  },
+  emitirCodigoVinculoClinica(idClinica: number) {
+    // Sem corpo: o código é criado exclusivamente pela API para a clínica informada.
+    return api.post<CodigoVinculoClinica>(`/vinculos-clinica/clinicas/${idClinica}/codigo`);
+  },
+
 
   // ---- Veterinários ----
   listarVeterinarios() {
