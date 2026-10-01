@@ -172,24 +172,3 @@ export interface RegistroAuditoria {
   ip?: string | null;
   ocorridoEm: string;
 }
-
-// ---- Agenda do dia ----
-export type StatusAtendimento = 'AGENDADO' | 'CONCLUIDO' | 'CANCELADO';
-
-/** Um evento de saúde/estética da agenda do dia (GET /agenda/dia). */
-export interface AtendimentoDia {
-  idEvento: number;
-  /** "HH:mm"; pode vir nulo em eventos antigos. */
-  hrEvento?: string | null;
-  status: StatusAtendimento | string;
-  idPet: number;
-  nmPet: string;
-  raca?: string | null;
-  nmTutor?: string | null;
-  nmTipoEvento: string;
-  dsCategoria?: string | null;
-  /** Veterinário ou profissional de estética responsável. */
-  nmProfissional?: string | null;
-  nmClinica?: string | null;
-}
- 
