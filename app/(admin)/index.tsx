@@ -35,6 +35,7 @@ const ITENS: Item[] = [
   { href: '/(admin)/veterinarios', icon: 'medical-outline', label: 'Veterinários', desc: 'Equipe clínica', countKey: 'vets' },
   { href: '/(admin)/estetica', icon: 'cut-outline', label: 'Estética', desc: 'Equipe de estética', countKey: 'esteticistas' },
   { href: '/(admin)/medicamentos', icon: 'flask-outline', label: 'Medicamentos', desc: 'Catálogo', countKey: 'medicamentos' },
+  { href: '/(admin)/vinculo-clinica', icon: 'qr-code-outline', label: 'Vínculo da clínica', desc: 'Emitir código e QR code' },
   { href: '/(admin)/recompensas', icon: 'gift-outline', label: 'Recompensas', desc: 'Catálogo de resgates', countKey: 'recompensas' },
   { href: '/(admin)/tipos-evento', icon: 'list-outline', label: 'Tipos de evento', desc: 'Catálogo (leitura)' },
   { href: '/(admin)/tipos-vacina', icon: 'bandage-outline', label: 'Tipos de vacina', desc: 'Cadastrar catálogo' },

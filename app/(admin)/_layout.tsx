@@ -31,6 +31,7 @@ export default function AdminLayout() {
           <Stack.Screen name="pontos" options={{ title: 'Pontos' }} />
           <Stack.Screen name="veterinarios" options={{ title: 'Veterinários' }} />
           <Stack.Screen name="estetica" options={{ title: 'Estética' }} />
+          <Stack.Screen name="vinculo-clinica" options={{ title: 'Vínculo da clínica' }} />
           <Stack.Screen name="medicamentos" options={{ title: 'Medicamentos' }} />
           <Stack.Screen name="recompensas" options={{ title: 'Recompensas' }} />
           <Stack.Screen name="tipos-evento" options={{ title: 'Tipos de evento' }} />

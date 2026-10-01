@@ -39,6 +39,7 @@ export const NAV_GROUPS: NavGroup[] = [
     itens: [
       { href: '/(admin)/veterinarios', route: 'veterinarios', icon: 'medical-outline', label: 'Veterinários' },
       { href: '/(admin)/estetica', route: 'estetica', icon: 'cut-outline', label: 'Estética' },
+      { href: '/(admin)/vinculo-clinica', route: 'vinculo-clinica', icon: 'qr-code-outline', label: 'Vínculo da clínica' },
       { href: '/(admin)/administradores', route: 'administradores', icon: 'shield-checkmark-outline', label: 'Administradores' },
     ],
   },
