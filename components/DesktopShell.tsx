@@ -1,10 +1,9 @@
-import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { CORES } from '../constants/theme';
 import { AppIcon } from './AppIcon';
-import { Aparecer } from './ui/Aparecer';
 import { transicao } from '../utils/animacao';
 
 const logo = require('../assets/logo.png');
@@ -125,17 +124,99 @@ export function Sidebar() {
   );
 }
 
-/** Barra superior com o título da página atual centralizado. */
+function normalizar(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+/** Barra superior com busca: digite o nome de uma página ou o número de um pet (1 a 4 dígitos). */
 export function Topbar() {
-  const pathname = usePathname();
-  const ativa = rotaAtual(pathname);
-  const titulo = TODOS_OS_ITENS.find((i) => i.route === ativa)?.label ?? 'Agenda';
+  const router = useRouter();
+  const [termo, setTermo] = useState('');
+  const [aberto, setAberto] = useState(false);
+  const fecharTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const q = normalizar(termo);
+  const apenasNumero = /^\d{1,4}$/.test(q);
+  const paginas = q && !apenasNumero ? TODOS_OS_ITENS.filter((i) => normalizar(i.label).includes(q)) : [];
+  const temResultados = apenasNumero || paginas.length > 0;
+
+  function limpar() {
+    setTermo('');
+    setAberto(false);
+  }
+
+  function irParaPagina(href: string) {
+    router.push(href as any);
+    limpar();
+  }
+
+  function buscarPet(numero: string) {
+    router.push({ pathname: '/(admin)/buscar-pet', params: { numero } } as any);
+    limpar();
+  }
+
+  function enviar() {
+    if (apenasNumero) buscarPet(q);
+    else if (paginas.length > 0) irParaPagina(paginas[0].href);
+  }
 
   return (
     <View style={s.topbar}>
-      <Aparecer key={titulo} distancia={6} duracao={240}>
-        <Text style={s.topbarTitle}>{titulo}</Text>
-      </Aparecer>
+      <View style={s.searchWrap}>
+        <View style={[s.searchBox, aberto && s.searchBoxFocus]}>
+          <AppIcon name="search-outline" size={18} color={CORES.textoSecundario} />
+          <TextInput
+            value={termo}
+            onChangeText={(v) => {
+              setTermo(v);
+              setAberto(true);
+            }}
+            onFocus={() => {
+              if (fecharTimer.current) clearTimeout(fecharTimer.current);
+              setAberto(true);
+            }}
+            // Pequeno atraso para o clique em um resultado acontecer antes de fechar a lista.
+            onBlur={() => {
+              fecharTimer.current = setTimeout(() => setAberto(false), 150);
+            }}
+            onSubmitEditing={enviar}
+            placeholder="Buscar páginas ou pet pelo número…"
+            placeholderTextColor={CORES.textoSecundario}
+            returnKeyType="search"
+            style={[s.searchInput, { outlineStyle: 'none' } as any]}
+          />
+          {termo ? (
+            <Pressable onPress={limpar} hitSlop={8}>
+              <AppIcon name="close" size={16} color={CORES.textoSecundario} />
+            </Pressable>
+          ) : null}
+        </View>
+
+        {aberto && q ? (
+          <View style={s.results}>
+            {apenasNumero && (
+              <Pressable
+                onPress={() => buscarPet(q)}
+                style={(st: any) => [s.resultItem, st.hovered && s.resultItemHover]}
+              >
+                <AppIcon name="search-outline" size={17} color={CORES.primaria} />
+                <Text style={s.resultText}>Buscar pet nº {q}</Text>
+              </Pressable>
+            )}
+            {paginas.map((item) => (
+              <Pressable
+                key={item.href}
+                onPress={() => irParaPagina(item.href)}
+                style={(st: any) => [s.resultItem, st.hovered && s.resultItemHover]}
+              >
+                <AppIcon name={item.icon} size={17} color={CORES.primaria} />
+                <Text style={s.resultText}>{item.label}</Text>
+              </Pressable>
+            ))}
+            {!temResultados && <Text style={s.resultEmpty}>Nenhum resultado para “{termo}”.</Text>}
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -201,9 +282,45 @@ const s = StyleSheet.create({
     height: 58,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
     backgroundColor: CORES.fundoCard,
     borderBottomWidth: 1,
     borderBottomColor: CORES.borda,
+    // Mantém a lista de resultados por cima do conteúdo da página.
+    zIndex: 50,
   },
-  topbarTitle: { fontSize: 15, fontWeight: '700', color: CORES.texto },
+  searchWrap: { width: '100%', maxWidth: 520, position: 'relative' },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: CORES.borda,
+    backgroundColor: CORES.fundo,
+  },
+  searchBoxFocus: { borderColor: CORES.primaria, backgroundColor: CORES.fundoCard },
+  searchInput: { flex: 1, fontSize: 14, color: CORES.texto, paddingVertical: 0 },
+  results: {
+    position: 'absolute',
+    top: 44,
+    left: 0,
+    right: 0,
+    backgroundColor: CORES.fundoCard,
+    borderWidth: 1,
+    borderColor: CORES.borda,
+    borderRadius: 12,
+    paddingVertical: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    zIndex: 60,
+  },
+  resultItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  resultItemHover: { backgroundColor: CORES.fundo },
+  resultText: { fontSize: 14, color: CORES.texto, fontWeight: '600' },
+  resultEmpty: { fontSize: 13, color: CORES.textoSecundario, paddingHorizontal: 14, paddingVertical: 10 },
 });

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 import { adminService } from '../../services/adminService';
 import type { Pet } from '../../types';
 import { mensagemDeErro } from '../../utils/erro';
@@ -14,17 +15,18 @@ function formatarData(iso?: string | null): string {
 }
 
 export default function BuscarPetScreen() {
+  const params = useLocalSearchParams<{ numero?: string }>();
   const [numero, setNumero] = useState('');
   const [buscando, setBuscando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pet, setPet] = useState<Pet | null>(null);
 
-  async function buscar() {
+  async function buscar(valor: string = numero) {
     setErro(null);
     setPet(null);
     setBuscando(true);
     try {
-      setPet(await adminService.buscarPetPorNumero(numero));
+      setPet(await adminService.buscarPetPorNumero(valor));
     } catch (e) {
       // 400 (número inválido) e 404 (não encontrado) chegam com a mensagem do backend.
       setErro(mensagemDeErro(e));
@@ -32,6 +34,15 @@ export default function BuscarPetScreen() {
       setBuscando(false);
     }
   }
+
+  // Vindo da barra de busca do topo (?numero=0042): preenche e já pesquisa.
+  useEffect(() => {
+    const vindo = typeof params.numero === 'string' ? params.numero.replace(/\D/g, '') : '';
+    if (vindo) {
+      setNumero(vindo);
+      void buscar(vindo);
+    }
+  }, [params.numero]);
 
   return (
     <Screen
@@ -51,7 +62,7 @@ export default function BuscarPetScreen() {
           maxLength={4}
           onSubmitEditing={() => numero && buscar()}
         />
-        <Button label={buscando ? 'Buscando…' : 'Buscar'} onPress={buscar} loading={buscando} disabled={!numero} />
+        <Button label={buscando ? 'Buscando…' : 'Buscar'} onPress={() => buscar()} loading={buscando} disabled={!numero} />
       </Card>
 
       {erro && <Banner tone="error">{erro}</Banner>}
