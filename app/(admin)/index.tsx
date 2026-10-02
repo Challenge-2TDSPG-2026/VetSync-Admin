@@ -38,11 +38,11 @@ const ITENS: Item[] = [
   { href: '/(admin)/estetica', icon: 'cut-outline', label: 'Estética', desc: 'Equipe de estética', countKey: 'esteticistas' },
   { href: '/(admin)/medicamentos', icon: 'flask-outline', label: 'Medicamentos', desc: 'Catálogo', countKey: 'medicamentos' },
   { href: '/(admin)/vinculo-clinica', icon: 'qr-code-outline', label: 'Vínculo da clínica', desc: 'Emitir código e QR code' },
-  { href: '/(admin)/recompensas', icon: 'gift-outline', label: 'Recompensas', desc: 'Catálogo de resgates', countKey: 'recompensas' },
-  { href: '/(admin)/tipos-evento', icon: 'list-outline', label: 'Tipos de evento', desc: 'Catálogo (leitura)' },
+  { href: '/(admin)/recompensas', icon: 'gift-outline', label: 'Programa Fidelidade', desc: 'Catálogo de resgates', countKey: 'recompensas' },
+  // Temporariamente oculto: { href: '/(admin)/tipos-evento', icon: 'list-outline', label: 'Tipos de evento', desc: 'Catálogo (leitura)' },
   { href: '/(admin)/tipos-vacina', icon: 'bandage-outline', label: 'Tipos de vacina', desc: 'Cadastrar catálogo' },
   { href: '/(admin)/buscar-pet', icon: 'search-outline', label: 'Buscar pet', desc: 'Consulta por número' },
-  { href: '/(admin)/auditoria', icon: 'time-outline', label: 'Auditoria', desc: 'Histórico de alterações' },
+  // Temporariamente oculto: { href: '/(admin)/auditoria', icon: 'time-outline', label: 'Auditoria', desc: 'Histórico de alterações' },
   { href: '/(admin)/administradores', icon: 'shield-checkmark-outline', label: 'Administradores', desc: 'Cadastrar acesso' },
 ];
 
@@ -91,7 +91,7 @@ export default function Dashboard() {
 
   return (
     <Screen
-      title={isDesktop ? undefined : 'Painel'}
+      title={isDesktop ? undefined : 'Agenda'}
       larguraTotal
       refreshing={refreshing}
       onRefresh={onRefresh}

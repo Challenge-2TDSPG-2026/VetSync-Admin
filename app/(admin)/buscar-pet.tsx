@@ -35,7 +35,7 @@ export default function BuscarPetScreen() {
 
   return (
     <Screen
-      eyebrow="Consulta"
+      eyebrow="Buscar"
       title="Buscar pet"
       desc="Encontre um pet pelo número de identificação (1 a 4 dígitos, com ou sem zeros à esquerda)."
     >

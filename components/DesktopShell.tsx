@@ -26,7 +26,7 @@ export interface NavGroup {
 
 export const NAV_GROUPS: NavGroup[] = [
   {
-    itens: [{ href: '/(admin)', route: '', icon: 'grid-outline', label: 'Painel' }],
+    itens: [{ href: '/(admin)', route: '', icon: 'grid-outline', label: 'Agenda' }],
   },
   {
     titulo: 'Filas de aprovação',
@@ -49,16 +49,16 @@ export const NAV_GROUPS: NavGroup[] = [
     titulo: 'Catálogos',
     itens: [
       { href: '/(admin)/medicamentos', route: 'medicamentos', icon: 'flask-outline', label: 'Medicamentos' },
-      { href: '/(admin)/recompensas', route: 'recompensas', icon: 'gift-outline', label: 'Recompensas' },
-      { href: '/(admin)/tipos-evento', route: 'tipos-evento', icon: 'list-outline', label: 'Tipos de evento' },
+      { href: '/(admin)/recompensas', route: 'recompensas', icon: 'gift-outline', label: 'Programa Fidelidade' },
+      // Temporariamente oculto: { href: '/(admin)/tipos-evento', route: 'tipos-evento', icon: 'list-outline', label: 'Tipos de evento' },
       { href: '/(admin)/tipos-vacina', route: 'tipos-vacina', icon: 'bandage-outline', label: 'Tipos de vacina' },
     ],
   },
   {
-    titulo: 'Consulta',
+    titulo: 'Buscar',
     itens: [
       { href: '/(admin)/buscar-pet', route: 'buscar-pet', icon: 'search-outline', label: 'Buscar pet' },
-      { href: '/(admin)/auditoria', route: 'auditoria', icon: 'time-outline', label: 'Auditoria' },
+      // Temporariamente oculto: { href: '/(admin)/auditoria', route: 'auditoria', icon: 'time-outline', label: 'Auditoria' },
     ],
   },
 ];
@@ -129,7 +129,7 @@ export function Sidebar() {
 export function Topbar() {
   const pathname = usePathname();
   const ativa = rotaAtual(pathname);
-  const titulo = TODOS_OS_ITENS.find((i) => i.route === ativa)?.label ?? 'Painel';
+  const titulo = TODOS_OS_ITENS.find((i) => i.route === ativa)?.label ?? 'Agenda';
 
   return (
     <View style={s.topbar}>

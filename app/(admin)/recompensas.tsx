@@ -154,7 +154,7 @@ export default function RecompensasScreen() {
   return (
     <Screen
       eyebrow="Catálogo"
-      title="Recompensas"
+      title="Programa Fidelidade"
       desc="Itens que o tutor resgata com pontos. Recompensas com resgates vinculados não são apagadas, apenas inativadas."
       refreshing={refreshing}
       onRefresh={onRefresh}
