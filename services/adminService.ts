@@ -3,6 +3,7 @@ import { api, uploadNativo } from './api/httpClient';
 import { anexarImagem } from '../utils/imagem';
 import type {
   AdminCriado,
+  AtendimentoDia,
   Clinica,
   CodigoVinculoClinica,
   EntidadeAuditoria,
@@ -166,6 +167,12 @@ export const adminService = {
   // ---- Tipos de evento (catálogo, somente leitura) ----
   listarTiposEvento() {
     return api.get<TipoEvento[]>('/tipos-evento');
+  },
+
+  // ---- Agenda do dia ----
+  /** @param data ISO local "YYYY-MM-DD". */
+  listarAtendimentosDoDia(data: string) {
+    return api.get<AtendimentoDia[]>(`/agenda/dia?data=${encodeURIComponent(data)}`);
   },
 
   // ---- Auditoria ----
