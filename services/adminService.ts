@@ -3,6 +3,7 @@ import { api, uploadNativo } from './api/httpClient';
 import { anexarImagem } from '../utils/imagem';
 import type {
   AdminCriado,
+  AtendimentoDia,
   Clinica,
   CodigoVinculoClinica,
   EntidadeAuditoria,
