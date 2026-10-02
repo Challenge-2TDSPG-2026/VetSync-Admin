@@ -1,9 +1,10 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { CORES } from '../../constants/theme';
+import { Hover } from './Hover';
 
 export function RecordRow({ children }: { children: React.ReactNode }) {
-  return <View style={s.row}>{children}</View>;
+  return <Hover style={s.row} hoverStyle={s.rowHover}>{children}</Hover>;
 }
 
 export function RecordHeader({ id, title, right }: { id?: string | number; title: string; right?: React.ReactNode }) {
@@ -51,6 +52,14 @@ const s = StyleSheet.create({
     borderColor: CORES.borda,
     padding: 16,
     marginBottom: 12,
+  },
+  rowHover: {
+    borderColor: CORES.secundaria,
+    transform: [{ translateY: -2 }],
+    shadowColor: CORES.primaria,
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
   },
   header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
   id: { fontSize: 11, fontWeight: '700', color: CORES.textoSecundario, marginBottom: 2 },

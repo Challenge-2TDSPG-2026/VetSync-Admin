@@ -8,6 +8,7 @@ import { Screen } from '../../components/Screen';
 import { Banner } from '../../components/ui/Card';
 import { AppIcon } from '../../components/AppIcon';
 import { AtendimentosDoDia } from '../../components/admin/AtendimentosDoDia';
+import { SaudacaoPainel } from '../../components/admin/SaudacaoPainel';
 import { useIsDesktop } from '../../hooks/useIsDesktop';
 
 interface Item {
@@ -90,15 +91,16 @@ export default function Dashboard() {
 
   return (
     <Screen
-      eyebrow={isDesktop ? undefined : `Bem-vindo(a), ${sessao?.nome ?? ''}`}
       title={isDesktop ? undefined : 'Painel'}
-      desc={isDesktop ? undefined : 'Filas que esperam decisão do admin e catálogos que você mantém.'}
+      larguraTotal
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
       {semConexao && (
         <Banner tone="info">Não foi possível validar sua sessão com a API (sem conexão). Você continua logado, mas os dados podem estar desatualizados. Se o problema persistir, saia e entre novamente.</Banner>
       )}
+
+      <SaudacaoPainel />
 
       {/* Desktop: a navegação já está na sidebar, então o painel mostra só a agenda do dia. */}
       {isDesktop ? (

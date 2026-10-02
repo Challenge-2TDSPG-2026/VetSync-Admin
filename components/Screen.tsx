@@ -2,6 +2,7 @@ import React from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CORES } from '../constants/theme';
 import { useIsDesktop } from '../hooks/useIsDesktop';
+import { Aparecer } from './ui/Aparecer';
 
 interface ScreenProps {
   eyebrow?: string;
@@ -10,9 +11,11 @@ interface ScreenProps {
   children: React.ReactNode;
   refreshing?: boolean;
   onRefresh?: () => void;
+  /** Desktop: ocupa toda a largura da área de conteúdo, sem o limite de 1100px. */
+  larguraTotal?: boolean;
 }
 
-export function Screen({ eyebrow, title, desc, children, refreshing, onRefresh }: ScreenProps) {
+export function Screen({ eyebrow, title, desc, children, refreshing, onRefresh, larguraTotal }: ScreenProps) {
   const isDesktop = useIsDesktop();
   return (
     <ScrollView
@@ -23,15 +26,17 @@ export function Screen({ eyebrow, title, desc, children, refreshing, onRefresh }
         onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={CORES.secundaria} /> : undefined
       }
     >
-      <View style={isDesktop ? s.inner : undefined}>
-        {(eyebrow || title || desc) && (
-          <View style={s.header}>
-            {eyebrow ? <Text style={s.eyebrow}>{eyebrow}</Text> : null}
-            {title ? <Text style={s.title}>{title}</Text> : null}
-            {desc ? <Text style={s.desc}>{desc}</Text> : null}
-          </View>
-        )}
-        {children}
+      <View style={isDesktop ? [s.inner, larguraTotal && s.innerTotal] : undefined}>
+        <Aparecer>
+          {(eyebrow || title || desc) && (
+            <View style={s.header}>
+              {eyebrow ? <Text style={s.eyebrow}>{eyebrow}</Text> : null}
+              {title ? <Text style={s.title}>{title}</Text> : null}
+              {desc ? <Text style={s.desc}>{desc}</Text> : null}
+            </View>
+          )}
+          {children}
+        </Aparecer>
       </View>
     </ScrollView>
   );
@@ -51,6 +56,7 @@ const s = StyleSheet.create({
   content: { padding: 18, paddingBottom: 48 },
   contentDesktop: { paddingHorizontal: 40, paddingTop: 32, paddingBottom: 64, alignItems: 'center' },
   inner: { width: '100%', maxWidth: 1100 },
+  innerTotal: { maxWidth: '100%' },
   header: { marginBottom: 18 },
   eyebrow: { fontSize: 11.5, fontWeight: '800', color: CORES.mintDeep, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 },
   title: { fontSize: 23, fontWeight: '800', color: CORES.texto, letterSpacing: -0.3 },

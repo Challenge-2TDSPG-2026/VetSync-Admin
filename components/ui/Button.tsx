@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import { CORES } from '../../constants/theme';
+import { transicao } from '../../utils/animacao';
 
 type Variant = 'primary' | 'ghost' | 'approve' | 'deny' | 'dangerText';
 type Size = 'md' | 'sm';
@@ -21,12 +22,14 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', loadi
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
-      style={({ pressed }) => [
+      style={(st: any) => [
         s.base,
+        transicao(),
         size === 'sm' && s.sm,
         VARIANT_STYLE[variant],
         isDisabled && s.disabled,
-        pressed && !isDisabled && s.pressed,
+        st.hovered && !isDisabled && s.hover,
+        st.pressed && !isDisabled && s.pressed,
         style,
       ]}
     >
@@ -65,7 +68,8 @@ const s = StyleSheet.create({
   },
   sm: { paddingVertical: 9, paddingHorizontal: 14 },
   disabled: { opacity: 0.5 },
-  pressed: { opacity: 0.85 },
+  hover: { transform: [{ translateY: -2 }], opacity: 0.94 },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
   label: { fontSize: 14.5, fontWeight: '700' },
   labelSm: { fontSize: 12.8 },
 });

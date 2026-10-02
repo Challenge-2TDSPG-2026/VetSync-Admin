@@ -4,6 +4,8 @@ import { usePathname, useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { CORES } from '../constants/theme';
 import { AppIcon } from './AppIcon';
+import { Aparecer } from './ui/Aparecer';
+import { transicao } from '../utils/animacao';
 
 const logo = require('../assets/logo.png');
 
@@ -91,7 +93,13 @@ export function Sidebar() {
                 <Pressable
                   key={item.href}
                   onPress={() => router.push(item.href as any)}
-                  style={({ pressed }) => [s.navItem, isAtivo && s.navItemActive, pressed && !isAtivo && s.navItemPressed]}
+                  style={(st: any) => [
+                    s.navItem,
+                    transicao(),
+                    isAtivo && s.navItemActive,
+                    st.hovered && !isAtivo && s.navItemHover,
+                    st.pressed && !isAtivo && s.navItemPressed,
+                  ]}
                 >
                   <AppIcon name={item.icon} size={19} color={isAtivo ? '#fff' : CORES.mintPale} />
                   <Text style={[s.navLabel, isAtivo && s.navLabelActive]} numberOfLines={1}>
@@ -109,7 +117,7 @@ export function Sidebar() {
           <Text style={s.userName} numberOfLines={1}>{sessao?.nome ?? 'Administrador'}</Text>
           <Text style={s.userRole} numberOfLines={1}>{sessao?.email ?? 'ADMIN'}</Text>
         </View>
-        <Pressable onPress={logout} hitSlop={10} style={({ pressed }) => [s.logoutBtn, pressed && { opacity: 0.6 }]}>
+        <Pressable onPress={logout} hitSlop={10} style={(st: any) => [s.logoutBtn, transicao(), st.hovered && s.logoutHover, st.pressed && { opacity: 0.6 }]}>
           <AppIcon name="log-out-outline" size={20} color="#fff" />
         </Pressable>
       </View>
@@ -125,7 +133,9 @@ export function Topbar() {
 
   return (
     <View style={s.topbar}>
-      <Text style={s.topbarTitle}>{titulo}</Text>
+      <Aparecer key={titulo} distancia={6} duracao={240}>
+        <Text style={s.topbarTitle}>{titulo}</Text>
+      </Aparecer>
     </View>
   );
 }
@@ -170,7 +180,8 @@ const s = StyleSheet.create({
     marginBottom: 2,
   },
   navItemActive: { backgroundColor: CORES.mintDeep },
-  navItemPressed: { backgroundColor: 'rgba(255,255,255,0.07)' },
+  navItemHover: { backgroundColor: 'rgba(255,255,255,0.1)', transform: [{ translateX: 3 }] },
+  navItemPressed: { backgroundColor: 'rgba(255,255,255,0.16)' },
   navLabel: { fontSize: 14, fontWeight: '600', color: CORES.mintPale, flexShrink: 1 },
   navLabelActive: { color: '#fff', fontWeight: '700' },
   userBox: {
@@ -184,7 +195,8 @@ const s = StyleSheet.create({
   },
   userName: { fontSize: 13.5, fontWeight: '700', color: '#fff' },
   userRole: { fontSize: 11.5, color: CORES.mintPale, marginTop: 1 },
-  logoutBtn: { padding: 6 },
+  logoutBtn: { padding: 6, borderRadius: 8 },
+  logoutHover: { backgroundColor: 'rgba(255,255,255,0.12)', transform: [{ scale: 1.1 }] },
   topbar: {
     height: 58,
     alignItems: 'center',

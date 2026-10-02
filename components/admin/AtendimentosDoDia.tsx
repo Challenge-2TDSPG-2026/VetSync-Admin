@@ -8,6 +8,9 @@ import { useIsDesktop } from '../../hooks/useIsDesktop';
 import { AppIcon } from '../AppIcon';
 import { Banner } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
+import { Aparecer } from '../ui/Aparecer';
+import { Hover } from '../ui/Hover';
+import { transicao } from '../../utils/animacao';
 
 const POR_PAGINA = 6;
 
@@ -113,7 +116,7 @@ export function AtendimentosDoDia({ refreshKey = 0 }: Props) {
             onPress={() => setData(somarDias(data, -1))}
             accessibilityLabel="Dia anterior"
             hitSlop={8}
-            style={({ pressed }) => [s.seta, pressed && s.pressed]}
+            style={(st: any) => [s.seta, transicao(), st.hovered && s.setaHover, st.pressed && s.pressed]}
           >
             <AppIcon name="chevron-back" size={18} color={CORES.texto} />
           </Pressable>
@@ -122,15 +125,10 @@ export function AtendimentosDoDia({ refreshKey = 0 }: Props) {
             onPress={() => setData(somarDias(data, 1))}
             accessibilityLabel="Próximo dia"
             hitSlop={8}
-            style={({ pressed }) => [s.seta, pressed && s.pressed]}
+            style={(st: any) => [s.seta, transicao(), st.hovered && s.setaHover, st.pressed && s.pressed]}
           >
             <AppIcon name="chevron-forward" size={18} color={CORES.texto} />
           </Pressable>
-          {!ehHoje && (
-            <Pressable onPress={() => setData(hoje)} style={({ pressed }) => [s.btnHoje, pressed && s.pressed]}>
-              <Text style={s.btnHojeTexto}>Hoje</Text>
-            </Pressable>
-          )}
         </View>
       </View>
 
@@ -168,11 +166,15 @@ export function AtendimentosDoDia({ refreshKey = 0 }: Props) {
             </View>
           )}
 
-          {visiveis.map((a) => (isDesktop ? <LinhaDesktop key={a.idEvento} a={a} /> : <LinhaMobile key={a.idEvento} a={a} />))}
+          {visiveis.map((a, i) => (
+            <Aparecer key={a.idEvento} delay={Math.min(i, 8) * 45} distancia={8} duracao={300}>
+              {isDesktop ? <LinhaDesktop a={a} /> : <LinhaMobile a={a} />}
+            </Aparecer>
+          ))}
 
           {(restantes > 0 || (expandido && itens.length > POR_PAGINA)) && (
             <View style={s.verMaisBox}>
-              <Pressable onPress={() => setExpandido((v) => !v)} style={({ pressed }) => [s.verMais, pressed && s.pressed]}>
+              <Pressable onPress={() => setExpandido((v) => !v)} style={(st: any) => [s.verMais, transicao(), st.hovered && s.verMaisHover, st.pressed && s.pressed]}>
                 <Text style={s.verMaisTexto}>{expandido ? 'Ver menos' : `Ver mais (${restantes})`}</Text>
                 <AppIcon name={expandido ? 'chevron-up' : 'chevron-down'} size={16} color={CORES.mintDeep} />
               </Pressable>
@@ -206,7 +208,7 @@ function StatusPill({ status }: { status: string }) {
 function LinhaDesktop({ a }: { a: AtendimentoDia }) {
   const cancelado = a.status === 'CANCELADO';
   return (
-    <View style={s.tr}>
+    <Hover style={s.tr} hoverStyle={s.trHover}>
       <Text style={[s.td, s.colHora, cancelado && s.riscado]}>{a.hrEvento || '—'}</Text>
       <View style={[s.colPet, s.petCelula]}>
         <Avatar nome={a.nmPet} />
@@ -220,7 +222,7 @@ function LinhaDesktop({ a }: { a: AtendimentoDia }) {
       <View style={s.colStatus}>
         <StatusPill status={a.status} />
       </View>
-    </View>
+    </Hover>
   );
 }
 
@@ -262,8 +264,7 @@ const s = StyleSheet.create({
   seletor: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   seta: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: CORES.fundoSutil },
   dataTexto: { fontSize: 13.5, fontWeight: '600', color: CORES.texto, paddingHorizontal: 6, minWidth: 130, textAlign: 'center' },
-  btnHoje: { marginLeft: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: CORES.mintDeep },
-  btnHojeTexto: { fontSize: 12.5, fontWeight: '700', color: CORES.mintDeep },
+  setaHover: { backgroundColor: CORES.mintPale, transform: [{ scale: 1.1 }] },
   pressed: { opacity: 0.7 },
 
   bloco: { marginTop: 4 },
@@ -274,6 +275,8 @@ const s = StyleSheet.create({
   recarregando: { opacity: 0.5 },
 
   thead: { flexDirection: 'row', alignItems: 'center', backgroundColor: CORES.fundo, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12 },
+  trHover: { backgroundColor: '#f3faf6' },
+  verMaisHover: { backgroundColor: CORES.mintPale, transform: [{ translateY: -2 }] },
   th: { fontSize: 13, fontWeight: '700', color: CORES.textoSecundario },
   tr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: CORES.borda },
   td: { fontSize: 13.5, color: CORES.textoSecundario },
