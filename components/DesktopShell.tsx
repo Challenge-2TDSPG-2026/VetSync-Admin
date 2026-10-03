@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
 import { CORES } from '../constants/theme';
 import { AppIcon } from './AppIcon';
+import { ProfileMenu } from './ProfileMenu';
 import { transicao } from '../utils/animacao';
 
 const logo = require('../assets/logo.png');
@@ -72,7 +72,6 @@ function rotaAtual(pathname: string): string {
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { sessao, logout } = useAuth();
   const ativa = rotaAtual(pathname);
 
   return (
@@ -110,16 +109,6 @@ export function Sidebar() {
           </View>
         ))}
       </ScrollView>
-
-      <View style={s.userBox}>
-        <View style={{ flex: 1 }}>
-          <Text style={s.userName} numberOfLines={1}>{sessao?.nome ?? 'Administrador'}</Text>
-          <Text style={s.userRole} numberOfLines={1}>{sessao?.email ?? 'ADMIN'}</Text>
-        </View>
-        <Pressable onPress={logout} hitSlop={10} style={(st: any) => [s.logoutBtn, transicao(), st.hovered && s.logoutHover, st.pressed && { opacity: 0.6 }]}>
-          <AppIcon name="log-out-outline" size={20} color="#fff" />
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -162,61 +151,64 @@ export function Topbar() {
 
   return (
     <View style={s.topbar}>
-      <View style={s.searchWrap}>
-        <View style={[s.searchBox, aberto && s.searchBoxFocus]}>
-          <AppIcon name="search-outline" size={18} color={CORES.textoSecundario} />
-          <TextInput
-            value={termo}
-            onChangeText={(v) => {
-              setTermo(v);
-              setAberto(true);
-            }}
-            onFocus={() => {
-              if (fecharTimer.current) clearTimeout(fecharTimer.current);
-              setAberto(true);
-            }}
-            // Pequeno atraso para o clique em um resultado acontecer antes de fechar a lista.
-            onBlur={() => {
-              fecharTimer.current = setTimeout(() => setAberto(false), 150);
-            }}
-            onSubmitEditing={enviar}
-            placeholder="Buscar páginas ou pet pelo número…"
-            placeholderTextColor={CORES.textoSecundario}
-            returnKeyType="search"
-            style={[s.searchInput, { outlineStyle: 'none' } as any]}
-          />
-          {termo ? (
-            <Pressable onPress={limpar} hitSlop={8}>
-              <AppIcon name="close" size={16} color={CORES.textoSecundario} />
-            </Pressable>
+      <View style={s.searchArea}>
+        <View style={s.searchWrap}>
+          <View style={[s.searchBox, aberto && s.searchBoxFocus]}>
+            <AppIcon name="search-outline" size={18} color={CORES.textoSecundario} />
+            <TextInput
+              value={termo}
+              onChangeText={(v) => {
+                setTermo(v);
+                setAberto(true);
+              }}
+              onFocus={() => {
+                if (fecharTimer.current) clearTimeout(fecharTimer.current);
+                setAberto(true);
+              }}
+              // Pequeno atraso para o clique em um resultado acontecer antes de fechar a lista.
+              onBlur={() => {
+                fecharTimer.current = setTimeout(() => setAberto(false), 150);
+              }}
+              onSubmitEditing={enviar}
+              placeholder="Buscar páginas ou pet pelo número…"
+              placeholderTextColor={CORES.textoSecundario}
+              returnKeyType="search"
+              style={[s.searchInput, { outlineStyle: 'none' } as any]}
+            />
+            {termo ? (
+              <Pressable onPress={limpar} hitSlop={8}>
+                <AppIcon name="close" size={16} color={CORES.textoSecundario} />
+              </Pressable>
+            ) : null}
+          </View>
+
+          {aberto && q ? (
+            <View style={s.results}>
+              {apenasNumero && (
+                <Pressable
+                  onPress={() => buscarPet(q)}
+                  style={(st: any) => [s.resultItem, st.hovered && s.resultItemHover]}
+                >
+                  <AppIcon name="search-outline" size={17} color={CORES.primaria} />
+                  <Text style={s.resultText}>Buscar pet nº {q}</Text>
+                </Pressable>
+              )}
+              {paginas.map((item) => (
+                <Pressable
+                  key={item.href}
+                  onPress={() => irParaPagina(item.href)}
+                  style={(st: any) => [s.resultItem, st.hovered && s.resultItemHover]}
+                >
+                  <AppIcon name={item.icon} size={17} color={CORES.primaria} />
+                  <Text style={s.resultText}>{item.label}</Text>
+                </Pressable>
+              ))}
+              {!temResultados && <Text style={s.resultEmpty}>Nenhum resultado para “{termo}”.</Text>}
+            </View>
           ) : null}
         </View>
-
-        {aberto && q ? (
-          <View style={s.results}>
-            {apenasNumero && (
-              <Pressable
-                onPress={() => buscarPet(q)}
-                style={(st: any) => [s.resultItem, st.hovered && s.resultItemHover]}
-              >
-                <AppIcon name="search-outline" size={17} color={CORES.primaria} />
-                <Text style={s.resultText}>Buscar pet nº {q}</Text>
-              </Pressable>
-            )}
-            {paginas.map((item) => (
-              <Pressable
-                key={item.href}
-                onPress={() => irParaPagina(item.href)}
-                style={(st: any) => [s.resultItem, st.hovered && s.resultItemHover]}
-              >
-                <AppIcon name={item.icon} size={17} color={CORES.primaria} />
-                <Text style={s.resultText}>{item.label}</Text>
-              </Pressable>
-            ))}
-            {!temResultados && <Text style={s.resultEmpty}>Nenhum resultado para “{termo}”.</Text>}
-          </View>
-        ) : null}
       </View>
+      <ProfileMenu />
     </View>
   );
 }
@@ -265,23 +257,11 @@ const s = StyleSheet.create({
   navItemPressed: { backgroundColor: 'rgba(255,255,255,0.16)' },
   navLabel: { fontSize: 14, fontWeight: '600', color: CORES.mintPale, flexShrink: 1 },
   navLabelActive: { color: '#fff', fontWeight: '700' },
-  userBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-  },
-  userName: { fontSize: 13.5, fontWeight: '700', color: '#fff' },
-  userRole: { fontSize: 11.5, color: CORES.mintPale, marginTop: 1 },
-  logoutBtn: { padding: 6, borderRadius: 8 },
-  logoutHover: { backgroundColor: 'rgba(255,255,255,0.12)', transform: [{ scale: 1.1 }] },
   topbar: {
     height: 58,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 16,
     paddingHorizontal: 24,
     backgroundColor: CORES.fundoCard,
     borderBottomWidth: 1,
@@ -289,6 +269,7 @@ const s = StyleSheet.create({
     // Mantém a lista de resultados por cima do conteúdo da página.
     zIndex: 50,
   },
+  searchArea: { flex: 1, alignItems: 'center', minWidth: 0 },
   searchWrap: { width: '100%', maxWidth: 520, position: 'relative' },
   searchBox: {
     flexDirection: 'row',

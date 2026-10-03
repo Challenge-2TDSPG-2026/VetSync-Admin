@@ -30,6 +30,8 @@ export default function LoginScreen() {
   const [autenticando, setAutenticando] = useState(false);
 
   async function handleSubmit() {
+    // Evita envio duplicado (clique no botão + Enter) enquanto a API responde.
+    if (autenticando) return;
     setErro(null);
     setAutenticando(true);
     try {
@@ -73,6 +75,8 @@ export default function LoginScreen() {
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
+              editable={!autenticando}
+              style={autenticando && s.inputTravado}
             />
             <Field
               label="Senha"
@@ -82,6 +86,8 @@ export default function LoginScreen() {
               secureTextEntry
               autoComplete="password"
               onSubmitEditing={handleSubmit}
+              editable={!autenticando}
+              style={autenticando && s.inputTravado}
             />
 
             <Button label={autenticando ? 'Entrando…' : 'Entrar'} onPress={handleSubmit} loading={autenticando} style={s.btn} />
@@ -109,6 +115,8 @@ const s = StyleSheet.create({
   formTitle: { fontSize: 21, fontWeight: '800', color: CORES.texto },
   formSub: { fontSize: 13, color: CORES.textoSecundario, marginTop: 4, marginBottom: 20 },
   btn: { marginTop: 6 },
+  // Campo travado enquanto a API responde.
+  inputTravado: { opacity: 0.55, backgroundColor: CORES.fundoSutil },
 
   // Desktop: hero à esquerda, formulário centralizado à direita.
   heroDesktop: { flex: 1, justifyContent: 'center', paddingHorizontal: 64, paddingVertical: 48 },
