@@ -30,6 +30,7 @@ async function montarFormRecompensa(p: RecompensaPayload): Promise<FormData> {
   form.append('descricao', p.descricao.trim());
   form.append('custoPontos', String(p.custoPontos));
   form.append('tipo', p.tipo);
+  form.append('idClinica', String(p.idClinica));
   if (p.ativo !== undefined) form.append('ativo', String(p.ativo));
   if (p.imagem) {
     await anexarImagem(form, 'imagem', p.imagem);
@@ -47,6 +48,7 @@ async function enviarRecompensa(metodo: 'POST' | 'PUT', path: string, p: Recompe
       descricao: p.descricao.trim(),
       custoPontos: String(p.custoPontos),
       tipo: p.tipo,
+      idClinica: String(p.idClinica),
     };
     if (p.ativo !== undefined) campos.ativo = String(p.ativo);
     return uploadNativo<Recompensa>({ method: metodo, path, campos, arquivo: p.imagem });
@@ -130,46 +132,48 @@ export const adminService = {
   listarPrescricoesPendentes() {
     return api.get<Prescricao[]>('/prescricoes');
   },
-  liberarPrescricao(id: number, aprovado: boolean) {
-    return api.patch(`/prescricoes/${id}/liberar`, { aprovado });
+  liberarPrescricao(id: number, aprovado: boolean, idClinica?: number | null) {
+    return api.patch(`/prescricoes/${id}/liberar`, { aprovado, ...(idClinica ? { idClinica } : {}) });
   },
 
   // ---- Relatórios de estética ----
   listarRelatoriosPendentes() {
     return api.get<RelatorioEstetica[]>('/relatorios-estetica');
   },
-  liberarRelatorio(id: number, aprovado: boolean) {
-    return api.patch(`/relatorios-estetica/${id}/liberar`, { aprovado });
+  liberarRelatorio(id: number, aprovado: boolean, idClinica?: number | null) {
+    return api.patch(`/relatorios-estetica/${id}/liberar`, { aprovado, ...(idClinica ? { idClinica } : {}) });
   },
 
   // ---- Pontos ----
   listarPontosPendentes() {
     return api.get<LancamentoPontos[]>('/pontos');
   },
-  liberarPontos(id: number) {
-    return api.patch(`/pontos/${id}/liberar`);
+  liberarPontos(id: number, idClinica?: number | null) {
+    return api.patch(`/pontos/${id}/liberar`, idClinica ? { idClinica } : undefined);
   },
 
   // ---- Medicamentos ----
   listarMedicamentos() {
     return api.get<Medicamento[]>('/medicamentos');
   },
-  criarMedicamento(nmMedicamento: string, dsPrincipio: string, vlPrecoRef: string) {
+  criarMedicamento(nmMedicamento: string, dsPrincipio: string, vlPrecoRef: string, idClinica: number) {
     return api.post<Medicamento>('/medicamentos', {
+      idClinica,
       nmMedicamento,
       dsPrincipio: dsPrincipio || null,
       vlPrecoRef: vlPrecoRef === '' ? null : Number(vlPrecoRef),
     });
   },
-  atualizarMedicamento(id: number, nmMedicamento: string, dsPrincipio: string, vlPrecoRef: string) {
+  atualizarMedicamento(id: number, nmMedicamento: string, dsPrincipio: string, vlPrecoRef: string, idClinica: number) {
     return api.put<Medicamento>(`/medicamentos/${id}`, {
+      idClinica,
       nmMedicamento,
       dsPrincipio: dsPrincipio || null,
       vlPrecoRef: vlPrecoRef === '' ? null : Number(vlPrecoRef),
     });
   },
-  removerMedicamento(id: number) {
-    return api.delete(`/medicamentos/${id}`);
+  removerMedicamento(id: number, idClinica: number) {
+    return api.delete(`/medicamentos/${id}?idClinica=${idClinica}`);
   },
 
   // ---- Recompensas (multipart) ----
@@ -192,8 +196,8 @@ export const adminService = {
   },
 
   // ---- Tipos de vacina (só criação: a API não tem GET) ----
-  criarTipoVacina(nome: string, periodicidadeDias: number) {
-    return api.post<TipoVacina>('/pets/tipos-vacina', { nome: nome.trim(), periodicidadeDias });
+  criarTipoVacina(nome: string, periodicidadeDias: number, idClinica: number) {
+    return api.post<TipoVacina>('/pets/tipos-vacina', { nome: nome.trim(), periodicidadeDias, idClinica });
   },
 
   // ---- Tipos de evento (catálogo, somente leitura) ----

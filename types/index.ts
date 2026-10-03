@@ -75,6 +75,8 @@ export interface Prescricao {
   nmVeterinario: string;
   dtInicio: string;
   dtFim?: string;
+  idClinica?: number | null;
+  nmClinica?: string | null;
 }
 
 export interface RelatorioEstetica {
@@ -85,6 +87,8 @@ export interface RelatorioEstetica {
   nmPet: string;
   nmTutor: string;
   nmProfissionalEstetica: string;
+  idClinica?: number | null;
+  nmClinica?: string | null;
 }
 
 export interface LancamentoPontos {
@@ -98,6 +102,8 @@ export interface LancamentoPontos {
   nmTutor: string;
   nrPontos: number;
   dtLancamento: string;
+  idClinica?: number | null;
+  nmClinica?: string | null;
 }
 
 export interface Medicamento {
@@ -105,6 +111,8 @@ export interface Medicamento {
   nmMedicamento: string;
   dsPrincipio?: string | null;
   vlPrecoRef?: number | null;
+  idClinica?: number | null;
+  nmClinica?: string | null;
 }
 
 export interface TipoEvento {
@@ -128,6 +136,8 @@ export interface Recompensa {
   ativa: boolean;
   /** Caminho relativo, ex.: /recompensas/3/imagem (exige Authorization). */
   imagemUrl?: string | null;
+  idClinica?: number | null;
+  nmClinica?: string | null;
 }
 
 export interface ExclusaoRecompensa {
@@ -148,6 +158,8 @@ export interface RecompensaPayload {
   descricao: string;
   custoPontos: number;
   tipo: TipoRecompensa;
+  /** Clínica dona da recompensa, escolhida pelo nome no ClinicaSelect. */
+  idClinica: number;
   imagem?: ImagemSelecionada | null;
   /** Só na edição. */
   ativo?: boolean;
@@ -174,6 +186,8 @@ export interface TipoVacina {
   id: number;
   nome: string;
   periodicidadeDias: number;
+  idClinica?: number | null;
+  nmClinica?: string | null;
 }
 
 // ---- Auditoria ----

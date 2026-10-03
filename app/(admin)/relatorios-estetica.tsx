@@ -35,14 +35,14 @@ export default function RelatoriosEsteticaScreen() {
     setRefreshing(false);
   }
 
-  async function decidir(id: number, aprovado: boolean) {
+  async function decidir(id: number, aprovado: boolean, idClinica?: number | null) {
     if (!aprovado) {
       const ok = await confirmar('Negar este relatório? A decisão é definitiva e não poderá ser desfeita.', 'Negar');
       if (!ok) return;
     }
     setProcessando(id);
     try {
-      await adminService.liberarRelatorio(id, aprovado);
+      await adminService.liberarRelatorio(id, aprovado, idClinica);
       mostrarToast(
         'sucesso',
         aprovado ? 'Relatório liberado' : 'Relatório negado',
@@ -74,13 +74,14 @@ export default function RelatoriosEsteticaScreen() {
       {lista?.map((r) => (
         <RecordRow key={r.idRelatorio}>
           <RecordHeader id={r.idRelatorio} title={r.nmPet} />
+          {r.nmClinica || r.idClinica ? <RecordLine label="Clínica" value={r.nmClinica || `#${r.idClinica}`} /> : null}
           <RecordLine label="Tutor" value={r.nmTutor} />
           <RecordLine label="Profissional" value={r.nmProfissionalEstetica} />
           {r.idEvento ? <RecordLine label="Evento" value={`#${r.idEvento}`} /> : null}
           <RecordBlock label="Problema relatado" value={r.dsProblema} />
           <RecordActions>
-            <Button label="Liberar" variant="approve" size="sm" onPress={() => decidir(r.idRelatorio, true)} loading={processando === r.idRelatorio} disabled={processando !== null} />
-            <Button label="Negar" variant="deny" size="sm" onPress={() => decidir(r.idRelatorio, false)} disabled={processando !== null} />
+            <Button label="Liberar" variant="approve" size="sm" onPress={() => decidir(r.idRelatorio, true, r.idClinica)} loading={processando === r.idRelatorio} disabled={processando !== null} />
+            <Button label="Negar" variant="deny" size="sm" onPress={() => decidir(r.idRelatorio, false, r.idClinica)} disabled={processando !== null} />
           </RecordActions>
         </RecordRow>
       ))}

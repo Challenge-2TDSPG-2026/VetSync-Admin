@@ -6,6 +6,7 @@ import { mostrarToast } from '../../components/ui/Toast';
 import { Screen, LoadingBlock } from '../../components/Screen';
 import { Banner } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { StatusTag } from '../../components/ui/StatusTag';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { RecordActions, RecordHeader, RecordLine, RecordRow } from '../../components/ui/RecordRow';
 
@@ -34,11 +35,11 @@ export default function PontosScreen() {
     setRefreshing(false);
   }
 
-  async function liberar(id: number) {
+  async function liberar(id: number, idClinica?: number | null) {
     setProcessando(id);
     try {
-      await adminService.liberarPontos(id);
-      mostrarToast('sucesso', 'Pontos liberados', 'Adicionados ao saldo do tutor.');
+      await adminService.liberarPontos(id, idClinica);
+      mostrarToast('sucesso', 'Pontos liberados', 'Adicionados ao saldo do tutor nesta clínica.');
       setLista((prev) => prev?.filter((l) => l.idLancamento !== id) ?? null);
     } catch (e) {
       mostrarToast('erro', mensagemDeErro(e));
@@ -52,7 +53,7 @@ export default function PontosScreen() {
     <Screen
       eyebrow="Fila de aprovação"
       title="Pontos"
-      desc="Lançamentos de eventos concluídos ou bônus de plano de tratamento."
+      desc="Lançamentos de eventos concluídos ou bônus de plano de tratamento. Os pontos valem só na clínica em que foram gerados."
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
@@ -67,13 +68,14 @@ export default function PontosScreen() {
             id={l.idLancamento}
             title={l.origem === 'EVENTO' ? l.nmTipoEvento || 'Evento' : 'Bônus de plano'}
           />
+          {l.nmClinica || l.idClinica ? <StatusTag tom="neutro" label={l.nmClinica || `Clínica #${l.idClinica}`} /> : null}
           <RecordLine label="Origem" value={l.origem === 'EVENTO' ? `Evento #${l.idEvento}` : `Plano #${l.idPlano}`} />
           <RecordLine label="Pet" value={l.nmPet} />
           <RecordLine label="Tutor" value={l.nmTutor} />
           <RecordLine label="Pontos" value={String(l.nrPontos)} />
           <RecordLine label="Data" value={l.dtLancamento} />
           <RecordActions>
-            <Button label="Liberar" variant="approve" size="sm" onPress={() => liberar(l.idLancamento)} loading={processando === l.idLancamento} disabled={processando !== null} />
+            <Button label="Liberar" variant="approve" size="sm" onPress={() => liberar(l.idLancamento, l.idClinica)} loading={processando === l.idLancamento} disabled={processando !== null} />
           </RecordActions>
         </RecordRow>
       ))}

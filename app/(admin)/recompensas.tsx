@@ -12,6 +12,7 @@ import { RecompensaImagem } from '../../components/RecompensaImagem';
 import { Screen, LoadingBlock } from '../../components/Screen';
 import { Card, CardDesc, CardTitle, Field, Banner } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { ClinicaSelect } from '../../components/ui/ClinicaSelect';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { StatusTag } from '../../components/ui/StatusTag';
 import { RecordActions, RecordHeader, RecordLine, RecordRow } from '../../components/ui/RecordRow';
@@ -31,6 +32,7 @@ export default function RecompensasScreen() {
   const [versao, setVersao] = useState(0);
 
   const [form, setForm] = useState(FORM_VAZIO);
+  const [idClinica, setIdClinica] = useState<number | null>(null);
   const [editando, setEditando] = useState<Recompensa | null>(null);
   const [ativa, setAtiva] = useState(true);
   const [imagem, setImagem] = useState<ImagemSelecionada | null>(null);
@@ -59,11 +61,12 @@ export default function RecompensasScreen() {
   }
 
   const custoNumero = /^\d+$/.test(form.custoPontos) ? Number(form.custoPontos) : 0;
-  const formValido = form.nome.trim().length > 0 && custoNumero > 0;
+  const formValido = form.nome.trim().length > 0 && custoNumero > 0 && idClinica !== null;
 
   function limparFormulario() {
     setEditando(null);
     setForm(FORM_VAZIO);
+    setIdClinica(null);
     setAtiva(true);
     setImagem(null);
     setRemoverImagem(false);
@@ -72,6 +75,7 @@ export default function RecompensasScreen() {
   function iniciarEdicao(r: Recompensa) {
     setEditando(r);
     setForm({ nome: r.nome, descricao: r.descricao || '', custoPontos: String(r.custoPontos), tipo: r.tipo });
+    setIdClinica(r.idClinica ?? null);
     setAtiva(r.ativa);
     setImagem(null);
     setRemoverImagem(false);
@@ -101,20 +105,21 @@ export default function RecompensasScreen() {
   }
 
   async function handleSubmit() {
-    if (!formValido) return;
+    if (!formValido || idClinica === null) return;
     setSalvando(true);
     try {
       if (editando) {
         await adminService.atualizarRecompensa(editando.idRecompensa, {
           ...form,
           custoPontos: custoNumero,
+          idClinica,
           imagem,
           ativo: ativa,
           removerImagem: !imagem && removerImagem,
         });
         mostrarToast('sucesso', 'Recompensa atualizada');
       } else {
-        await adminService.criarRecompensa({ ...form, custoPontos: custoNumero, imagem });
+        await adminService.criarRecompensa({ ...form, custoPontos: custoNumero, idClinica, imagem });
         mostrarToast('sucesso', 'Recompensa cadastrada no catálogo');
       }
       limparFormulario();
@@ -163,6 +168,7 @@ export default function RecompensasScreen() {
         <CardTitle>{editando ? `Editar recompensa #${editando.idRecompensa}` : 'Cadastrar recompensa'}</CardTitle>
         <CardDesc>Imagem opcional (JPEG, PNG ou WEBP, até 5 MB).</CardDesc>
 
+        <ClinicaSelect value={idClinica} onChange={setIdClinica} />
         <Field label="Nome" value={form.nome} onChangeText={(v) => setForm({ ...form, nome: v })} placeholder="Ex.: Cupom de 10% no banho" />
         <Field label="Descrição (opcional)" value={form.descricao} onChangeText={(v) => setForm({ ...form, descricao: v })} placeholder="Detalhes da recompensa" multiline />
         <Field
@@ -235,6 +241,7 @@ export default function RecompensasScreen() {
               <StatusTag tom={r.ativa ? 'aprovado' : 'negado'} label={r.ativa ? 'Ativa' : 'Inativa'} />
             </View>
           </View>
+          {r.nmClinica || r.idClinica ? <RecordLine label="Clínica" value={r.nmClinica || `#${r.idClinica}`} /> : null}
           <RecordLine label="Tipo" value={ROTULO_TIPO[r.tipo] ?? r.tipo} />
           <RecordLine label="Custo" value={`${r.custoPontos} pts`} />
           {r.descricao ? <RecordLine label="Descrição" value={r.descricao} /> : null}

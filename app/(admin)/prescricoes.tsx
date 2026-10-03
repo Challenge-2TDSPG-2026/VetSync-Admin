@@ -35,14 +35,14 @@ export default function PrescricoesScreen() {
     setRefreshing(false);
   }
 
-  async function decidir(id: number, aprovado: boolean) {
+  async function decidir(id: number, aprovado: boolean, idClinica?: number | null) {
     if (!aprovado) {
       const ok = await confirmar('Negar esta prescrição? A decisão é definitiva e não poderá ser desfeita.', 'Negar');
       if (!ok) return;
     }
     setProcessando(id);
     try {
-      await adminService.liberarPrescricao(id, aprovado);
+      await adminService.liberarPrescricao(id, aprovado, idClinica);
       mostrarToast('sucesso', aprovado ? 'Prescrição liberada' : 'Prescrição negada', aprovado ? 'O tutor será avisado por e-mail.' : undefined);
       setLista((prev) => prev?.filter((p) => p.idPrescricao !== id) ?? null);
     } catch (e) {
@@ -72,13 +72,14 @@ export default function PrescricoesScreen() {
           <RecordHeader id={p.idPrescricao} title={p.nmMedicamento} />
           <RecordLine label="Posologia" value={p.dsPosologia} />
           {p.qtDosesDia ? <RecordLine label="Doses" value={`${p.qtDosesDia}x ao dia`} /> : null}
+          {p.nmClinica || p.idClinica ? <RecordLine label="Clínica" value={p.nmClinica || `#${p.idClinica}`} /> : null}
           <RecordLine label="Pet" value={p.nmPet} />
           <RecordLine label="Tutor" value={p.nmTutor} />
           <RecordLine label="Veterinário" value={`Dr(a). ${p.nmVeterinario}`} />
           <RecordLine label="Período" value={p.dtFim ? `${p.dtInicio} → ${p.dtFim}` : p.dtInicio} />
           <RecordActions>
-            <Button label="Liberar" variant="approve" size="sm" onPress={() => decidir(p.idPrescricao, true)} loading={processando === p.idPrescricao} disabled={processando !== null} />
-            <Button label="Negar" variant="deny" size="sm" onPress={() => decidir(p.idPrescricao, false)} disabled={processando !== null} />
+            <Button label="Liberar" variant="approve" size="sm" onPress={() => decidir(p.idPrescricao, true, p.idClinica)} loading={processando === p.idPrescricao} disabled={processando !== null} />
+            <Button label="Negar" variant="deny" size="sm" onPress={() => decidir(p.idPrescricao, false, p.idClinica)} disabled={processando !== null} />
           </RecordActions>
         </RecordRow>
       ))}
