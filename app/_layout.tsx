@@ -2,9 +2,14 @@ import React, { useEffect } from 'react';
 import { ActivityIndicator, StatusBar, StyleSheet, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ToastHost } from '../components/ui/Toast';
+import { AppSplashGate } from '../components/animated-splash';
 import { CORES } from '../constants/theme';
+
+// Mantém a splash nativa até a abertura animada desenhar o primeiro frame.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function RootNavigator() {
   const { sessao, autenticado, carregando } = useAuth();
@@ -64,6 +69,7 @@ export default function RootLayout() {
       <AuthProvider>
         <RootNavigator />
         <ToastHost />
+        <AppSplashGate />
       </AuthProvider>
     </SafeAreaProvider>
   );
