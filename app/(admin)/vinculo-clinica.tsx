@@ -139,7 +139,7 @@ export default function VinculoClinicaScreen() {
     const substituindo = selecionada.codigoAtivo;
     if (substituindo) {
       const ok = await confirmar(
-        `Substituir o código de ${selecionada.nomeClinica}? O código atual será invalidado imediatamente e quem ainda o usa precisará do novo.`,
+        `Substituir o código de ${selecionada.nomeClinica}? O código atual deixa de funcionar na hora e não aceita mais novos vínculos. Tutores que já estão vinculados continuam vinculados.`,
         'Substituir código',
         'Substituir código'
       );
@@ -337,7 +337,7 @@ export default function VinculoClinicaScreen() {
                     ? 'O código já emitido está suspenso porque o contrato está inativo. Ative o contrato para voltar a emitir.'
                     : 'Ative o contrato da clínica para poder emitir o código e o QR code.'
                   : selecionada.codigoAtivo
-                    ? 'Existe um código ativo. Por segurança ele não pode ser exibido de novo. Se suspeitar que foi comprometido, substitua-o: o código atual deixa de valer na hora. O código não expira por tempo.'
+                    ? 'Existe um código ativo. Por segurança ele não pode ser exibido de novo. Se suspeitar que foi comprometido, substitua-o: o código atual deixa de funcionar na hora para novos vínculos. Quem já se vinculou continua vinculado. O código não expira por tempo.'
                     : 'Ainda não há código ativo. Emita um para entregar ao tutor. O código não expira por tempo.'}
               </Text>
               <Button

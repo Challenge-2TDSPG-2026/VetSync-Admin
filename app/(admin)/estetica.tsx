@@ -7,8 +7,9 @@ import { mostrarToast } from '../../components/ui/Toast';
 import { Screen, LoadingBlock } from '../../components/Screen';
 import { Card, CardTitle, CardDesc, Field, Banner } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { ClinicaSelect } from '../../components/ui/ClinicaSelect';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { RecordHeader, RecordLine, RecordRow } from '../../components/ui/RecordRow';
+import { RecordActions, RecordHeader, RecordLine, RecordRow } from '../../components/ui/RecordRow';
 
 export default function EsteticaScreen() {
   const [lista, setLista] = useState<ProfissionalEstetica[] | null>(null);
@@ -17,9 +18,10 @@ export default function EsteticaScreen() {
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
-  const [idClinica, setIdClinica] = useState('');
+  const [idClinica, setIdClinica] = useState<number | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [criado, setCriado] = useState<NovoUsuarioResposta | null>(null);
+  const [editando, setEditando] = useState<ProfissionalEstetica | null>(null);
 
   const carregar = useCallback(async () => {
     setErroLista(null);
@@ -41,16 +43,36 @@ export default function EsteticaScreen() {
     setRefreshing(false);
   }
 
+  function limparFormulario() {
+    setEditando(null);
+    setNome('');
+    setEmail('');
+    setIdClinica(null);
+  }
+
+  function iniciarEdicao(p: ProfissionalEstetica) {
+    setCriado(null);
+    setEditando(p);
+    setNome(p.nmProfissionalEstetica);
+    setIdClinica(p.idClinica ?? null);
+    mostrarToast('info', `Editando ${p.nmProfissionalEstetica}`, 'Altere os dados no formulário no topo da página.');
+  }
+
   async function handleSubmit() {
     setSalvando(true);
     setCriado(null);
     try {
-      const res = await adminService.criarProfissionalEstetica(nome, email, Number(idClinica));
+      if (editando) {
+        await adminService.atualizarProfissionalEstetica(editando.idProfissionalEstetica, nome.trim(), idClinica as number);
+        mostrarToast('sucesso', 'Profissional atualizado(a)', nome.trim());
+        limparFormulario();
+        carregar();
+        return;
+      }
+      const res = await adminService.criarProfissionalEstetica(nome, email, idClinica as number);
       mostrarToast('sucesso', `Profissional ${res.nome} cadastrado(a)`, `Registro ${res.registro}`);
       setCriado(res);
-      setNome('');
-      setEmail('');
-      setIdClinica('');
+      limparFormulario();
       carregar();
     } catch (e) {
       mostrarToast('erro', mensagemDeErro(e));
@@ -68,8 +90,10 @@ export default function EsteticaScreen() {
       onRefresh={onRefresh}
     >
       <Card>
-        <CardTitle>Cadastrar profissional</CardTitle>
-        <CardDesc>Informe o ID da clínica à qual pertence.</CardDesc>
+        <CardTitle>{editando ? `Editar profissional #${editando.idProfissionalEstetica}` : 'Cadastrar profissional'}</CardTitle>
+        <CardDesc>{editando ? 'Altere o nome ou a clínica.' : 'Escolha a clínica à qual pertence, pelo nome.'}</CardDesc>
+
+        {editando && <Banner tone="info">{editando.dsEmail} · o e-mail e o registro não podem ser alterados.</Banner>}
 
         {criado && (
           <Banner tone="info">
@@ -78,15 +102,21 @@ export default function EsteticaScreen() {
         )}
 
         <Field label="Nome" value={nome} onChangeText={setNome} placeholder="Nome completo" />
-        <Field label="E-mail" value={email} onChangeText={setEmail} placeholder="email@clinica.com" autoCapitalize="none" keyboardType="email-address" />
-        <Field label="ID da clínica" value={idClinica} onChangeText={setIdClinica} placeholder="1" keyboardType="numeric" />
+        {!editando && (
+          <Field label="E-mail" value={email} onChangeText={setEmail} placeholder="email@clinica.com" autoCapitalize="none" keyboardType="email-address" />
+        )}
+        <ClinicaSelect value={idClinica} onChange={setIdClinica} />
 
-        <Button
-          label={salvando ? 'Cadastrando…' : 'Cadastrar profissional'}
-          onPress={handleSubmit}
-          loading={salvando}
-          disabled={!nome || !email || !idClinica}
-        />
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <Button
+            label={salvando ? 'Salvando…' : editando ? 'Salvar alterações' : 'Cadastrar profissional'}
+            onPress={handleSubmit}
+            loading={salvando}
+            disabled={!nome.trim() || !idClinica || (!editando && !email)}
+            style={{ flex: 1 }}
+          />
+          {editando && <Button label="Cancelar" variant="ghost" onPress={limparFormulario} />}
+        </View>
       </Card>
 
       <View style={{ marginTop: 6 }}>
@@ -99,6 +129,9 @@ export default function EsteticaScreen() {
             <RecordLine label="Registro" value={p.nrRegistro} />
             <RecordLine label="E-mail" value={p.dsEmail} />
             <RecordLine label="Clínica" value={p.nmClinica || `#${p.idClinica}`} />
+            <RecordActions>
+              <Button label="Editar" variant="ghost" size="sm" onPress={() => iniciarEdicao(p)} />
+            </RecordActions>
           </RecordRow>
         ))}
       </View>

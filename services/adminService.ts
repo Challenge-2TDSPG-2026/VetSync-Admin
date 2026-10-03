@@ -106,12 +106,24 @@ export const adminService = {
     });
   },
 
+  atualizarVeterinario(id: number, nome: string, idClinica: number, especialidade?: string) {
+    return api.put<Veterinario>(`/veterinarios/${id}`, {
+      nome,
+      idClinica,
+      ...(especialidade?.trim() ? { especialidade: especialidade.trim() } : {}),
+    });
+  },
+
   // ---- Profissionais de estética ----
   listarProfissionaisEstetica() {
     return api.get<ProfissionalEstetica[]>('/profissionais-estetica');
   },
   criarProfissionalEstetica(nome: string, email: string, idClinica: number) {
     return api.post<NovoUsuarioResposta>('/profissionais-estetica', { nome, email, idClinica });
+  },
+
+  atualizarProfissionalEstetica(id: number, nome: string, idClinica: number) {
+    return api.put<ProfissionalEstetica>(`/profissionais-estetica/${id}`, { nome, idClinica });
   },
 
   // ---- Prescrições ----
