@@ -40,10 +40,26 @@ export interface CodigoVinculoClinica {
   codigo: string;
 }
 
-/** Dados mínimos de uma clínica disponíveis para administração. */
+export type StatusContrato = 'ATIVO' | 'INATIVO';
+
+/** Formato bruto devolvido por GET /vinculos-clinica/clinicas. */
+export interface ClinicaApi {
+  idClinica: number;
+  nomeClinica: string;
+  contratanteAtiva?: boolean;
+  statusContrato?: string;
+  codigoAtivo?: boolean;
+}
+
+/** Clínica disponível para administração, já com a situação do contrato e do código. */
 export interface Clinica {
   idClinica: number;
   nomeClinica: string;
+  /** true somente com contrato confirmado. Clínica nova/sem informação é tratada como inativa. */
+  contratoAtivo: boolean;
+  statusContrato: StatusContrato;
+  /** Existe um código de vínculo vigente (o valor em si nunca é devolvido pela API). */
+  codigoAtivo: boolean;
 }
 
 

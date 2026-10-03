@@ -10,12 +10,14 @@ import { Screen, LoadingBlock } from '../../components/Screen';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Banner, Card, CardDesc, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { StatusTag } from '../../components/ui/StatusTag';
 import { mostrarToast } from '../../components/ui/Toast';
 import { CORES } from '../../constants/theme';
 import { adminService } from '../../services/adminService';
 import { ApiError } from '../../services/api/httpClient';
 import type { Clinica, CodigoVinculoClinica } from '../../types';
 import { mensagemDeErro } from '../../utils/erro';
+import { confirmar } from '../../utils/confirmar';
 
 type QrCodeRef = {
   toDataURL: (callback: (base64: string) => void) => void;
@@ -27,6 +29,19 @@ function mensagemDaEmissao(erro: unknown): string {
     if (erro.status === 404) return 'A clínica selecionada não foi encontrada. Atualize a lista e escolha outra clínica.';
   }
   return mensagemDeErro(erro, 'Não foi possível emitir o código de vínculo. Tente novamente.');
+}
+
+function mensagemDoContrato(erro: unknown): string {
+  if (erro instanceof ApiError) {
+    if (erro.status === 403) return 'Seu usuário não tem permissão de administrador para alterar o contrato desta clínica.';
+    if (erro.status === 404) return 'A clínica selecionada não foi encontrada. Atualize a lista e escolha outra clínica.';
+  }
+  return mensagemDeErro(erro, 'Não foi possível alterar o contrato da clínica. Tente novamente.');
+}
+
+function situacaoCodigo(clinica: Clinica): { tom: 'aprovado' | 'pendente' | 'neutro' | 'negado'; label: string } {
+  if (!clinica.contratoAtivo) return clinica.codigoAtivo ? { tom: 'pendente', label: 'Código suspenso' } : { tom: 'neutro', label: 'Sem código' };
+  return clinica.codigoAtivo ? { tom: 'neutro', label: 'Código ativo' } : { tom: 'pendente', label: 'Sem código' };
 }
 
 function escaparHtml(valor: string): string {
@@ -49,6 +64,7 @@ export default function VinculoClinicaScreen() {
   const [emissao, setEmissao] = useState<CodigoVinculoClinica | null>(null);
   const [erroEmissao, setErroEmissao] = useState<string | null>(null);
   const [emitindo, setEmitindo] = useState(false);
+  const [alterandoContrato, setAlterandoContrato] = useState(false);
   const [exportando, setExportando] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const qrRef = useRef<QrCodeRef | null>(null);
@@ -81,8 +97,54 @@ export default function VinculoClinicaScreen() {
     setErroEmissao(null);
   }
 
+  async function alternarContrato() {
+    if (!selecionada || alterandoContrato) return;
+    const ativar = !selecionada.contratoAtivo;
+    const ok = await confirmar(
+      ativar
+        ? `Confirmar o contrato de ${selecionada.nomeClinica}? Depois disso será possível emitir o código de vínculo da clínica.`
+        : `Desativar o contrato de ${selecionada.nomeClinica}? O código de vínculo deixa de funcionar e novos tutores não conseguem se vincular à clínica.`,
+      ativar ? 'Ativar contrato' : 'Desativar contrato',
+      ativar ? 'Ativar contrato' : 'Desativar contrato'
+    );
+    if (!ok) return;
+
+    setAlterandoContrato(true);
+    try {
+      await adminService.alterarContratoClinica(selecionada.idClinica, ativar);
+      // Um QR exibido na tela deixa de valer quando o contrato é desativado.
+      if (!ativar) {
+        setEmissao(null);
+        setErroEmissao(null);
+      }
+      mostrarToast(
+        'sucesso',
+        ativar ? 'Contrato ativado' : 'Contrato desativado',
+        ativar ? 'Agora é possível emitir o código de vínculo.' : 'O código desta clínica não vincula mais tutores.'
+      );
+      await carregar();
+    } catch (erro) {
+      mostrarToast('erro', 'Não foi possível alterar o contrato', mensagemDoContrato(erro));
+    } finally {
+      setAlterandoContrato(false);
+    }
+  }
+
   async function emitirCodigo() {
-    if (!selecionada) return;
+    if (!selecionada || emitindo) return;
+    if (!selecionada.contratoAtivo) {
+      setErroEmissao('Ative o contrato da clínica antes de emitir um código de vínculo.');
+      return;
+    }
+    const substituindo = selecionada.codigoAtivo;
+    if (substituindo) {
+      const ok = await confirmar(
+        `Substituir o código de ${selecionada.nomeClinica}? O código atual será invalidado imediatamente e quem ainda o usa precisará do novo.`,
+        'Substituir código',
+        'Substituir código'
+      );
+      if (!ok) return;
+    }
     setEmitindo(true);
     setErroEmissao(null);
     // Não conserva um QR de emissão anterior enquanto uma nova requisição está em andamento.
@@ -90,7 +152,12 @@ export default function VinculoClinicaScreen() {
     try {
       const resposta = await adminService.emitirCodigoVinculoClinica(selecionada.idClinica);
       setEmissao(resposta);
-      mostrarToast('sucesso', 'Código de vínculo emitido', 'Guarde ou compartilhe agora: ele não pode ser recuperado depois.');
+      mostrarToast(
+        'sucesso',
+        substituindo ? 'Código substituído' : 'Código de vínculo emitido',
+        'Guarde ou compartilhe agora: ele não pode ser recuperado depois.'
+      );
+      await carregar();
     } catch (erro) {
       const mensagem = mensagemDaEmissao(erro);
       setErroEmissao(mensagem);
@@ -223,6 +290,10 @@ export default function VinculoClinicaScreen() {
                 <View style={s.clinicaTexto}>
                   <Text style={s.clinicaNome}>{clinica.nomeClinica}</Text>
                   <Text style={s.clinicaId}>Clínica #{clinica.idClinica}</Text>
+                  <View style={s.tags}>
+                    <StatusTag tom={clinica.contratoAtivo ? 'aprovado' : 'negado'} label={clinica.contratoAtivo ? 'Contrato ativo' : 'Contrato inativo'} />
+                    <StatusTag {...situacaoCodigo(clinica)} />
+                  </View>
                 </View>
                 {ativa ? <AppIcon name="checkmark-circle" size={22} color={CORES.secundaria} /> : null}
               </Pressable>
@@ -232,8 +303,52 @@ export default function VinculoClinicaScreen() {
 
         {selecionada ? (
           <>
-            <Banner tone="info">Uma nova emissão revoga imediatamente o código ativo anterior desta clínica. O código não expira por tempo, mas só é válido enquanto a clínica estiver com contrato ativo.</Banner>
-            <Button label={emitindo ? 'Emitindo código…' : 'Emitir novo código'} onPress={emitirCodigo} loading={emitindo} />
+            <View style={s.painel}>
+              <View style={s.painelCabecalho}>
+                <View style={s.painelTexto}>
+                  <Text style={s.painelTitulo}>Contrato</Text>
+                  <StatusTag tom={selecionada.contratoAtivo ? 'aprovado' : 'negado'} label={selecionada.contratoAtivo ? 'Ativo' : 'Inativo'} />
+                </View>
+                <Button
+                  label={selecionada.contratoAtivo ? 'Desativar contrato' : 'Ativar contrato'}
+                  variant={selecionada.contratoAtivo ? 'deny' : 'primary'}
+                  size="sm"
+                  onPress={alternarContrato}
+                  loading={alterandoContrato}
+                />
+              </View>
+              <Text style={s.painelDesc}>
+                {selecionada.contratoAtivo
+                  ? 'Contrato confirmado: a clínica pode vincular tutores com o código.'
+                  : 'Clínicas novas ficam inativas até o Admin confirmar o contrato. Enquanto estiver inativa, a clínica não emite código nem vincula tutores.'}
+              </Text>
+            </View>
+
+            <View style={s.painel}>
+              <View style={s.painelCabecalho}>
+                <View style={s.painelTexto}>
+                  <Text style={s.painelTitulo}>Código de vínculo</Text>
+                  <StatusTag {...situacaoCodigo(selecionada)} />
+                </View>
+              </View>
+              <Text style={s.painelDesc}>
+                {!selecionada.contratoAtivo
+                  ? selecionada.codigoAtivo
+                    ? 'O código já emitido está suspenso porque o contrato está inativo. Ative o contrato para voltar a emitir.'
+                    : 'Ative o contrato da clínica para poder emitir o código e o QR code.'
+                  : selecionada.codigoAtivo
+                    ? 'Existe um código ativo. Por segurança ele não pode ser exibido de novo. Se suspeitar que foi comprometido, substitua-o: o código atual deixa de valer na hora. O código não expira por tempo.'
+                    : 'Ainda não há código ativo. Emita um para entregar ao tutor. O código não expira por tempo.'}
+              </Text>
+              <Button
+                label={emitindo ? 'Emitindo código…' : selecionada.codigoAtivo ? 'Substituir código' : 'Emitir código'}
+                variant={selecionada.codigoAtivo ? 'deny' : 'primary'}
+                onPress={emitirCodigo}
+                loading={emitindo}
+                disabled={!selecionada.contratoAtivo || alterandoContrato}
+                style={s.painelBotao}
+              />
+            </View>
           </>
         ) : null}
         {erroEmissao ? <Banner tone="error">{erroEmissao}</Banner> : null}
@@ -285,6 +400,13 @@ const s = StyleSheet.create({
   clinicaTexto: { flex: 1, minWidth: 0 },
   clinicaNome: { color: CORES.texto, fontSize: 14, fontWeight: '700' },
   clinicaId: { color: CORES.textoSecundario, fontSize: 12, marginTop: 2 },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  painel: { marginTop: 14, borderWidth: 1, borderColor: CORES.borda, borderRadius: 14, padding: 14, backgroundColor: CORES.fundo },
+  painelCabecalho: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  painelTexto: { flex: 1, gap: 6 },
+  painelTitulo: { color: CORES.texto, fontSize: 14, fontWeight: '800' },
+  painelDesc: { color: CORES.textoSecundario, fontSize: 12.8, lineHeight: 18, marginTop: 10 },
+  painelBotao: { marginTop: 14 },
   pressed: { opacity: 0.72 },
   resultado: { marginTop: 14 },
   resultadoCabecalho: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },

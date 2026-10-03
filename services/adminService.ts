@@ -5,6 +5,7 @@ import type {
   AdminCriado,
   AtendimentoDia,
   Clinica,
+  ClinicaApi,
   CodigoVinculoClinica,
   EntidadeAuditoria,
   ExclusaoRecompensa,
@@ -58,14 +59,33 @@ async function enviarRecompensa(metodo: 'POST' | 'PUT', path: string, p: Recompe
     : api.putForm<Recompensa>(path, form);
 }
 
+/**
+ * Adequa a clínica recebida da API. O contrato só é considerado ativo quando a API
+ * confirma; qualquer ausência de informação conta como inativo (clínica nova).
+ */
+function normalizarClinica(c: ClinicaApi): Clinica {
+  const contratoAtivo = c.contratanteAtiva === true || (c.contratanteAtiva === undefined && c.statusContrato === 'ATIVO');
+  return {
+    idClinica: c.idClinica,
+    nomeClinica: c.nomeClinica,
+    contratoAtivo,
+    statusContrato: contratoAtivo ? 'ATIVO' : 'INATIVO',
+    codigoAtivo: c.codigoAtivo === true,
+  };
+}
+
 export const adminService = {
   // ---- Administradores ----
   criarAdmin(nome: string, email: string) {
     return api.post<AdminCriado>('/admins', { nome, email });
   },
   // ---- Vínculo de clínica ----
-  listarClinicas() {
-    return api.get<Clinica[]>('/vinculos-clinica/clinicas');
+  async listarClinicas(): Promise<Clinica[]> {
+    const lista = await api.get<ClinicaApi[]>('/vinculos-clinica/clinicas');
+    return lista.map(normalizarClinica);
+  },
+  alterarContratoClinica(idClinica: number, ativo: boolean) {
+    return api.patch<void>(`/vinculos-clinica/clinicas/${idClinica}/contrato`, { ativo });
   },
   emitirCodigoVinculoClinica(idClinica: number) {
     // Sem corpo: o código é criado exclusivamente pela API para a clínica informada.
