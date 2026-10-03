@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "scheme": "vetsyncadmin",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0e3326"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vetsync.admin"
@@ -30,6 +25,15 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0e3326",
+          "image": "./assets/splash-ponte.png",
+          "imageWidth": 100,
+          "resizeMode": "contain"
+        }
+      ],
       "expo-sharing"
     ]
   }
