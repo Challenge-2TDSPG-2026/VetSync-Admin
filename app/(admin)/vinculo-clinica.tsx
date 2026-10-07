@@ -44,6 +44,12 @@ function situacaoCodigo(clinica: Clinica): { tom: 'aprovado' | 'pendente' | 'neu
   return clinica.codigoAtivo ? { tom: 'neutro', label: 'Código ativo' } : { tom: 'pendente', label: 'Sem código' };
 }
 
+function formatarEmissao(iso?: string | null): string | null {
+  if (!iso) return null;
+  const data = new Date(iso);
+  return Number.isNaN(data.getTime()) ? null : data.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
 function escaparHtml(valor: string): string {
   return valor.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
@@ -64,6 +70,7 @@ export default function VinculoClinicaScreen() {
   const [emissao, setEmissao] = useState<CodigoVinculoClinica | null>(null);
   const [erroEmissao, setErroEmissao] = useState<string | null>(null);
   const [emitindo, setEmitindo] = useState(false);
+  const [revogando, setRevogando] = useState(false);
   const [alterandoContrato, setAlterandoContrato] = useState(false);
   const [exportando, setExportando] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -164,6 +171,30 @@ export default function VinculoClinicaScreen() {
       mostrarToast('erro', 'Não foi possível emitir o código', mensagem);
     } finally {
       setEmitindo(false);
+    }
+  }
+
+  async function revogarCodigo() {
+    if (!selecionada || revogando || !selecionada.codigoAtivo) return;
+    const ok = await confirmar(
+      `Revogar o código de ${selecionada.nomeClinica}? Ele deixa de funcionar na hora e nenhum novo tutor consegue se vincular até que um novo código seja emitido. Tutores já vinculados continuam vinculados.`,
+      'Revogar código',
+      'Revogar código'
+    );
+    if (!ok) return;
+    setRevogando(true);
+    setErroEmissao(null);
+    try {
+      await adminService.revogarCodigoVinculoClinica(selecionada.idClinica);
+      setEmissao(null);
+      mostrarToast('sucesso', 'Código revogado', 'Emita um novo código quando quiser voltar a vincular tutores.');
+      await carregar();
+    } catch (erro) {
+      const mensagem = mensagemDoContrato(erro);
+      setErroEmissao(mensagem);
+      mostrarToast('erro', 'Não foi possível revogar o código', mensagem);
+    } finally {
+      setRevogando(false);
     }
   }
 
@@ -345,9 +376,23 @@ export default function VinculoClinicaScreen() {
                 variant={selecionada.codigoAtivo ? 'deny' : 'primary'}
                 onPress={emitirCodigo}
                 loading={emitindo}
-                disabled={!selecionada.contratoAtivo || alterandoContrato}
+                disabled={!selecionada.contratoAtivo || alterandoContrato || revogando}
                 style={s.painelBotao}
               />
+              {selecionada.codigoAtivo ? (
+                <Button
+                  label={revogando ? 'Revogando…' : 'Revogar código'}
+                  variant="dangerText"
+                  size="sm"
+                  onPress={revogarCodigo}
+                  loading={revogando}
+                  disabled={emitindo || alterandoContrato}
+                  style={s.painelBotao}
+                />
+              ) : null}
+              {selecionada.codigoAtivo && formatarEmissao(selecionada.codigoEmitidoEm) ? (
+                <Text style={s.painelDesc}>Emitido em {formatarEmissao(selecionada.codigoEmitidoEm)}.</Text>
+              ) : null}
             </View>
           </>
         ) : null}

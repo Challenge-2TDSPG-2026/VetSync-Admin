@@ -28,6 +28,8 @@ const FORM_VAZIO = { nome: '', descricao: '', custoPontos: '', tipo: 'PRODUTO' a
 export default function RecompensasScreen() {
   /** Filtro da lista (null = todas as clínicas). Independente da clínica escolhida no formulário. */
   const [filtroClinica, setFiltroClinica] = useState<number | null>(null);
+  /** Mostra só os itens legados sem clínica (GET /recompensas/todas?semClinica=true). */
+  const [filtroSemClinica, setFiltroSemClinica] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   /** Muda a cada carga da lista para forçar o refetch das imagens autenticadas. */
   const [versao, setVersao] = useState(0);
@@ -43,10 +45,10 @@ export default function RecompensasScreen() {
 
   // O filtro vai para a API (?idClinica=); a tela só navega, o servidor valida o acesso.
   const buscar = useCallback(async () => {
-    const recompensas = await adminService.listarRecompensas(filtroClinica);
+    const recompensas = await adminService.listarRecompensas(filtroClinica, filtroSemClinica);
     setVersao(Date.now());
     return recompensas;
-  }, [filtroClinica]);
+  }, [filtroClinica, filtroSemClinica]);
   const { dados: lista, setDados: setLista, carregando, erro, recarregar } = useConsulta<Recompensa[]>(buscar);
 
   async function onRefresh() {
@@ -233,10 +235,28 @@ export default function RecompensasScreen() {
         <ClinicaSelect
           label="Filtrar catálogo por clínica"
           value={filtroClinica}
-          onChange={setFiltroClinica}
+          onChange={(id) => {
+            setFiltroSemClinica(false);
+            setFiltroClinica(id);
+          }}
           rotuloTodas="Todas as clínicas"
-          onLimpar={() => setFiltroClinica(null)}
+          onLimpar={() => {
+            setFiltroSemClinica(false);
+            setFiltroClinica(null);
+          }}
         />
+        <View style={s.linha}>
+          <Button
+            label="Itens sem clínica"
+            size="sm"
+            variant={filtroSemClinica ? 'primary' : 'ghost'}
+            onPress={() => {
+              setFiltroClinica(null);
+              setFiltroSemClinica((v) => !v);
+            }}
+          />
+          {filtroSemClinica ? <Text style={s.semImagem}>Itens legados: edite-os para atribuir uma clínica.</Text> : null}
+        </View>
       </Card>
 
       <EstadoConsulta
@@ -245,8 +265,20 @@ export default function RecompensasScreen() {
         vazio={!!lista && lista.length === 0}
         onTentarNovamente={() => recarregar()}
         vazioIcone="gift-outline"
-        vazioTitulo={filtroClinica === null ? 'Nenhuma recompensa cadastrada ainda' : 'Nenhuma recompensa nesta clínica'}
-        vazioSubtitulo={filtroClinica === null ? undefined : 'Cadastre uma recompensa para esta clínica ou escolha outra no filtro.'}
+        vazioTitulo={
+          filtroSemClinica
+            ? 'Nenhum item sem clínica'
+            : filtroClinica === null
+              ? 'Nenhuma recompensa cadastrada ainda'
+              : 'Nenhuma recompensa nesta clínica'
+        }
+        vazioSubtitulo={
+          filtroSemClinica
+            ? 'Todas as recompensas já têm uma clínica associada.'
+            : filtroClinica === null
+              ? undefined
+              : 'Cadastre uma recompensa para esta clínica ou escolha outra no filtro.'
+        }
       />
       {lista?.map((r) => (
         <RecordRow key={r.idRecompensa}>
@@ -257,7 +289,11 @@ export default function RecompensasScreen() {
               <StatusTag tom={r.ativa ? 'aprovado' : 'negado'} label={r.ativa ? 'Ativa' : 'Inativa'} />
             </View>
           </View>
-          {r.nmClinica || r.idClinica ? <RecordLine label="Clínica" value={r.nmClinica || `#${r.idClinica}`} /> : null}
+          {r.nmClinica || r.idClinica ? (
+            <RecordLine label="Clínica" value={r.nmClinica || `#${r.idClinica}`} />
+          ) : r.semClinica ? (
+            <RecordLine label="Clínica" value="Sem clínica — edite para atribuir" />
+          ) : null}
           <RecordLine label="Tipo" value={ROTULO_TIPO[r.tipo] ?? r.tipo} />
           <RecordLine label="Custo" value={`${r.custoPontos} pts`} />
           {r.descricao ? <RecordLine label="Descrição" value={r.descricao} /> : null}

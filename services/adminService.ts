@@ -97,6 +97,7 @@ function normalizarClinica(c: ClinicaApi): Clinica {
     contratoAtivo,
     statusContrato: contratoAtivo ? 'ATIVO' : 'INATIVO',
     codigoAtivo: c.codigoAtivo === true,
+    codigoEmitidoEm: c.codigoEmitidoEm ?? null,
   };
 }
 
@@ -116,6 +117,10 @@ export const adminService = {
   emitirCodigoVinculoClinica(idClinica: number) {
     // Sem corpo: o código é criado exclusivamente pela API para a clínica informada.
     return api.post<CodigoVinculoClinica>(`/vinculos-clinica/clinicas/${idClinica}/codigo`);
+  },
+  /** Revoga o código vigente (DELETE). Tutores já vinculados continuam vinculados. */
+  revogarCodigoVinculoClinica(idClinica: number) {
+    return api.delete<void>(`/vinculos-clinica/clinicas/${idClinica}/codigo`);
   },
 
 
@@ -227,9 +232,16 @@ export const adminService = {
   },
 
   // ---- Recompensas (multipart) ----
-  /** Catálogo completo (inclui inativas). Com idClinica a API devolve só as daquela clínica. */
-  listarRecompensas(idClinica?: IdClinicaFiltro) {
-    return api.get<Recompensa[]>(`/recompensas/todas${montarQuery({ idClinica })}`);
+  /**
+   * Catálogo completo (inclui inativas), GET /recompensas/todas.
+   * - `idClinica`: a API devolve só as recompensas daquela clínica.
+   * - `semClinica`: só os itens legados sem clínica (têm de ser editados para receber uma).
+   * Sem filtros, devolve todas. `semClinica` tem prioridade sobre `idClinica`.
+   */
+  listarRecompensas(idClinica?: IdClinicaFiltro, semClinica = false) {
+    return api.get<Recompensa[]>(
+      `/recompensas/todas${montarQuery(semClinica ? { semClinica: true } : { idClinica })}`
+    );
   },
   criarRecompensa(payload: RecompensaPayload) {
     return enviarRecompensa('POST', '/recompensas', payload);

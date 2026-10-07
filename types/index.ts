@@ -55,6 +55,8 @@ export interface ClinicaApi {
   contratanteAtiva?: boolean;
   statusContrato?: string;
   codigoAtivo?: boolean;
+  /** ISO-8601; quando o código vigente foi emitido (null se não há código). */
+  codigoEmitidoEm?: string | null;
 }
 
 /** Clínica disponível para administração, já com a situação do contrato e do código. */
@@ -66,6 +68,8 @@ export interface Clinica {
   statusContrato: StatusContrato;
   /** Existe um código de vínculo vigente (o valor em si nunca é devolvido pela API). */
   codigoAtivo: boolean;
+  /** ISO-8601; quando o código vigente foi emitido (null se não há código). */
+  codigoEmitidoEm: string | null;
 }
 
 
@@ -238,6 +242,8 @@ export interface Recompensa {
   imagemUrl?: string | null;
   idClinica?: number | null;
   nmClinica?: string | null;
+  /** Item legado sem clínica: precisa ser editado para receber uma. */
+  semClinica?: boolean;
 }
 
 export interface ExclusaoRecompensa {
