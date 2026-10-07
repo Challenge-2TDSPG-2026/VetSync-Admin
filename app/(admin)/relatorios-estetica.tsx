@@ -35,14 +35,14 @@ export default function RelatoriosEsteticaScreen() {
     setRefreshing(false);
   }
 
-  async function decidir(id: number, aprovado: boolean, idClinica?: number | null) {
+  async function decidir(id: number, aprovado: boolean) {
     if (!aprovado) {
       const ok = await confirmar('Negar este relatório? A decisão é definitiva e não poderá ser desfeita.', 'Negar');
       if (!ok) return;
     }
     setProcessando(id);
     try {
-      await adminService.liberarRelatorio(id, aprovado, idClinica);
+      await adminService.liberarRelatorio(id, aprovado);
       mostrarToast(
         'sucesso',
         aprovado ? 'Relatório liberado' : 'Relatório negado',
@@ -80,8 +80,8 @@ export default function RelatoriosEsteticaScreen() {
           {r.idEvento ? <RecordLine label="Evento" value={`#${r.idEvento}`} /> : null}
           <RecordBlock label="Problema relatado" value={r.dsProblema} />
           <RecordActions>
-            <Button label="Liberar" variant="approve" size="sm" onPress={() => decidir(r.idRelatorio, true, r.idClinica)} loading={processando === r.idRelatorio} disabled={processando !== null} />
-            <Button label="Negar" variant="deny" size="sm" onPress={() => decidir(r.idRelatorio, false, r.idClinica)} disabled={processando !== null} />
+            <Button label="Liberar" variant="approve" size="sm" onPress={() => decidir(r.idRelatorio, true)} loading={processando === r.idRelatorio} disabled={processando !== null} />
+            <Button label="Negar" variant="deny" size="sm" onPress={() => decidir(r.idRelatorio, false)} disabled={processando !== null} />
           </RecordActions>
         </RecordRow>
       ))}

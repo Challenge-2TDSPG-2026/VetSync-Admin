@@ -14,6 +14,12 @@ interface ClinicaSelectProps {
   disabled?: boolean;
   /** Mostra só clínicas com contrato ativo. Por padrão mostra todas, sinalizando as inativas. */
   somenteAtivas?: boolean;
+  /**
+   * Modo filtro: com `rotuloTodas` aparece a opção "todas as clínicas" (value null), que chama `onLimpar`.
+   * Sem essas props o componente se comporta como antes (seleção obrigatória de uma clínica).
+   */
+  rotuloTodas?: string;
+  onLimpar?: () => void;
 }
 
 /** Acima desse total aparece o campo de busca dentro da lista. */
@@ -34,6 +40,8 @@ export function ClinicaSelect({
   placeholder = 'Selecione a clínica',
   disabled,
   somenteAtivas,
+  rotuloTodas,
+  onLimpar,
 }: ClinicaSelectProps) {
   const { clinicas, carregando, erro, recarregar } = useClinicas();
   const [aberto, setAberto] = useState(false);
@@ -48,8 +56,16 @@ export function ClinicaSelect({
   const total = (clinicas ?? []).filter((c) => !somenteAtivas || c.contratoAtivo).length;
   const escolhida = clinicas?.find((c) => c.idClinica === value) ?? null;
 
+  const modoFiltro = !!rotuloTodas && !!onLimpar;
+
   function escolher(id: number) {
     onChange(id);
+    setAberto(false);
+    setBusca('');
+  }
+
+  function escolherTodas() {
+    onLimpar?.();
     setAberto(false);
     setBusca('');
   }
@@ -62,7 +78,7 @@ export function ClinicaSelect({
         onPress={() => setAberto((v) => !v)}
         disabled={disabled || carregando}
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${escolhida?.nomeClinica ?? placeholder}`}
+        accessibilityLabel={`${label}: ${escolhida?.nomeClinica ?? (modoFiltro ? rotuloTodas : placeholder)}`}
         accessibilityState={{ expanded: aberto, disabled: !!disabled }}
         style={(st: any) => [
           s.campo,
@@ -72,8 +88,8 @@ export function ClinicaSelect({
           (disabled || carregando) && s.campoDesabilitado,
         ]}
       >
-        <Text style={[s.campoTexto, !escolhida && s.placeholder]} numberOfLines={1}>
-          {carregando ? 'Carregando clínicas…' : escolhida?.nomeClinica ?? placeholder}
+        <Text style={[s.campoTexto, !escolhida && !modoFiltro && s.placeholder]} numberOfLines={1}>
+          {carregando ? 'Carregando clínicas…' : escolhida?.nomeClinica ?? (modoFiltro ? rotuloTodas : placeholder)}
         </Text>
         <AppIcon name={aberto ? 'chevron-up' : 'chevron-down'} size={18} color={CORES.textoSecundario} />
       </Pressable>
@@ -101,6 +117,20 @@ export function ClinicaSelect({
                 autoFocus
               />
             </View>
+          ) : null}
+
+          {modoFiltro && !busca ? (
+            <Pressable
+              onPress={escolherTodas}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: value === null }}
+              style={(st: any) => [s.opcao, transicao(), value === null && s.opcaoAtiva, st.hovered && value !== null && s.opcaoHover]}
+            >
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={s.opcaoNome} numberOfLines={1}>{rotuloTodas}</Text>
+              </View>
+              {value === null ? <AppIcon name="checkmark-circle" size={20} color={CORES.secundaria} /> : null}
+            </Pressable>
           ) : null}
 
           {opcoes.length === 0 ? (

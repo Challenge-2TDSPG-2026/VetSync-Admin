@@ -42,6 +42,12 @@ export interface CodigoVinculoClinica {
 
 export type StatusContrato = 'ATIVO' | 'INATIVO';
 
+/**
+ * Clínica usada como filtro de uma consulta. null/undefined = todas as clínicas.
+ * O filtro só serve para navegação na tela: quem decide o que o admin pode ver ou alterar é a API.
+ */
+export type IdClinicaFiltro = number | null | undefined;
+
 /** Formato bruto devolvido por GET /vinculos-clinica/clinicas. */
 export interface ClinicaApi {
   idClinica: number;
@@ -91,19 +97,113 @@ export interface RelatorioEstetica {
   nmClinica?: string | null;
 }
 
+/**
+ * Estado de um lançamento de pontos (GET /pontos):
+ * PENDENTE aguarda liberação; LIBERADO está dentro da validade; BLOQUEADO foi retido pelo admin;
+ * EXPIRADO estava liberado mas a validade venceu. Só LIBERADO conta como saldo disponível.
+ */
+export type StatusLancamentoPontos = 'PENDENTE' | 'LIBERADO' | 'BLOQUEADO' | 'EXPIRADO';
+
+/** Origem dos pontos: atendimento concluído ou bônus de plano de tratamento. */
+export type OrigemPontos = 'EVENTO' | 'BONUS_PLANO';
+
 export interface LancamentoPontos {
   idLancamento: number;
-  origem: 'EVENTO' | 'BONUS_PLANO';
-  status: 'PENDENTE' | 'LIBERADO';
-  idEvento?: number;
-  idPlano?: number;
-  nmTipoEvento?: string;
-  nmPet: string;
-  nmTutor: string;
+  status: StatusLancamentoPontos;
+  origem: OrigemPontos;
   nrPontos: number;
   dtLancamento: string;
+  /** Dia em que o admin liberou. Nulo enquanto nunca foi liberado. */
+  dtLiberacao?: string | null;
+  /** Último dia em que os pontos valem (inclusive). Nulo enquanto não liberado. */
+  dtValidade?: string | null;
+  dtBloqueio?: string | null;
+  motivoBloqueio?: string | null;
+  /** true só se LIBERADO, dentro da validade e com clínica. */
+  resgatavel: boolean;
+  idEvento?: number | null;
+  nmTipoEvento?: string | null;
+  dsAtendimento?: string | null;
+  dtAtendimento?: string | null;
+  idPlano?: number | null;
+  idPet?: number | null;
+  nmPet?: string | null;
+  idTutor?: number | null;
+  nmTutor?: string | null;
+  /** Clínica em que os pontos foram gerados e valem. Pontos de clínicas diferentes nunca se somam. */
   idClinica?: number | null;
   nmClinica?: string | null;
+}
+
+/** Filtros de GET /pontos. Todos opcionais; a API aplica o escopo de acesso de qualquer forma. */
+export interface FiltroPontos {
+  idClinica?: IdClinicaFiltro;
+  status?: StatusLancamentoPontos | null;
+  idTutor?: number | null;
+}
+
+/** Saldo de UM tutor em UMA clínica (GET /pontos/saldos). */
+export interface SaldoPontosClinica {
+  idTutor: number;
+  nmTutor: string;
+  idClinica: number;
+  nmClinica: string;
+  pontosPendentes: number;
+  pontosLiberados: number;
+  pontosBloqueados: number;
+  pontosExpirados: number;
+  pontosResgatados: number;
+  pontosReservados: number;
+  /** O que o tutor pode resgatar agora: nunca inclui pendente, bloqueado, expirado ou reservado. */
+  saldoDisponivel: number;
+}
+
+// ---- Painel inicial (GET /painel/resumo) ----
+
+/** CLINICA = números de uma clínica; GLOBAL = soma de todas as clínicas. */
+export type EscopoPainel = 'CLINICA' | 'GLOBAL';
+
+export interface PontosPainel {
+  pontosPendentes: number;
+  pontosBloqueados: number;
+  pontosExpirados: number;
+  /** Liberados e dentro da validade, antes de descontar resgates. */
+  pontosLiberados: number;
+  pontosResgatados: number;
+  pontosReservados: number;
+  /** Saldo resgatável somado dos tutores: não inclui pendentes, bloqueados, vencidos nem reservados. */
+  pontosDisponiveis: number;
+  lancamentosPendentes: number;
+  lancamentosBloqueados: number;
+}
+
+export interface RecompensasPainel {
+  recompensasAtivas: number;
+  recompensasInativas: number;
+  recompensasTotal: number;
+  resgatesPendentes: number;
+  resgatesValidados: number;
+  resgatesNegados: number;
+}
+
+export interface PontosPorClinica {
+  idClinica: number;
+  nmClinica: string;
+  pontos: PontosPainel;
+}
+
+export interface ResumoPainel {
+  escopo: EscopoPainel;
+  /** true quando os números somam todas as clínicas. */
+  totaisGlobais: boolean;
+  idClinica?: number | null;
+  nmClinica?: string | null;
+  /** Texto pronto para exibir junto aos indicadores (nome da clínica ou "Totais de todas as clínicas"). */
+  rotuloEscopo: string;
+  pontos: PontosPainel;
+  recompensas: RecompensasPainel;
+  /** Detalhamento por clínica; só vem preenchido no escopo GLOBAL. */
+  porClinica: PontosPorClinica[];
 }
 
 export interface Medicamento {
@@ -191,16 +291,47 @@ export interface TipoVacina {
 }
 
 // ---- Auditoria ----
-export type EntidadeAuditoria = 'EVENTO' | 'ACESSO_PET';
+/** Entidades auditáveis (GET /auditoria/tipos devolve a lista vigente). */
+export type EntidadeAuditoria =
+  | 'EVENTO'
+  | 'ACESSO_PET'
+  | 'VINCULO'
+  | 'CONTRATO'
+  | 'CODIGO_VINCULO'
+  | 'PONTOS'
+  | 'CATALOGO'
+  | 'RESGATE';
 
 export interface RegistroAuditoria {
+  id: number;
+  /** Aceita string para não quebrar se a API ganhar uma entidade nova. */
+  entidade: EntidadeAuditoria | string;
+  entidadeId: number;
   acao: string;
   ator?: string | null;
   perfil?: string | null;
+  clinicaId?: number | null;
+  clinicaNome?: string | null;
   valorAnterior?: string | null;
   valorNovo?: string | null;
   ip?: string | null;
   ocorridoEm: string;
+}
+
+/** Filtros de GET /auditoria para ADMIN. Todos opcionais; datas em "YYYY-MM-DD". */
+export interface FiltroAuditoria {
+  idClinica?: IdClinicaFiltro;
+  entidade?: EntidadeAuditoria | string | null;
+  entidadeId?: number | null;
+  acao?: string | null;
+  de?: string | null;
+  ate?: string | null;
+  limite?: number | null;
+}
+
+export interface TiposAuditoria {
+  entidades: string[];
+  acoes: string[];
 }
 
 // ---- Agenda do dia ----

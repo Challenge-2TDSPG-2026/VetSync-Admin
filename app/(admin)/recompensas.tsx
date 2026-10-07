@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Image, StyleSheet, Switch, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { adminService } from '../../services/adminService';
@@ -6,14 +6,15 @@ import type { ImagemSelecionada, Recompensa, TipoRecompensa } from '../../types'
 import { mensagemDeErro } from '../../utils/erro';
 import { confirmar } from '../../utils/confirmar';
 import { prepararImagem } from '../../utils/imagem';
+import { useConsulta } from '../../hooks/useConsulta';
 import { CORES } from '../../constants/theme';
 import { mostrarToast } from '../../components/ui/Toast';
 import { RecompensaImagem } from '../../components/RecompensaImagem';
-import { Screen, LoadingBlock } from '../../components/Screen';
-import { Card, CardDesc, CardTitle, Field, Banner } from '../../components/ui/Card';
+import { Screen } from '../../components/Screen';
+import { Card, CardDesc, CardTitle, Field } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { ClinicaSelect } from '../../components/ui/ClinicaSelect';
-import { EmptyState } from '../../components/ui/EmptyState';
+import { EstadoConsulta } from '../../components/ui/EstadoConsulta';
 import { StatusTag } from '../../components/ui/StatusTag';
 import { RecordActions, RecordHeader, RecordLine, RecordRow } from '../../components/ui/RecordRow';
 
@@ -25,8 +26,8 @@ const ROTULO_TIPO: Record<TipoRecompensa, string> = {
 const FORM_VAZIO = { nome: '', descricao: '', custoPontos: '', tipo: 'PRODUTO' as TipoRecompensa };
 
 export default function RecompensasScreen() {
-  const [lista, setLista] = useState<Recompensa[] | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
+  /** Filtro da lista (null = todas as clínicas). Independente da clínica escolhida no formulário. */
+  const [filtroClinica, setFiltroClinica] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   /** Muda a cada carga da lista para forçar o refetch das imagens autenticadas. */
   const [versao, setVersao] = useState(0);
@@ -40,23 +41,17 @@ export default function RecompensasScreen() {
   const [salvando, setSalvando] = useState(false);
   const [removendo, setRemovendo] = useState<number | null>(null);
 
-  const carregar = useCallback(async () => {
-    setErro(null);
-    try {
-      setLista(await adminService.listarRecompensas());
-      setVersao(Date.now());
-    } catch (e) {
-      setErro(mensagemDeErro(e));
-    }
-  }, []);
-
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
+  // O filtro vai para a API (?idClinica=); a tela só navega, o servidor valida o acesso.
+  const buscar = useCallback(async () => {
+    const recompensas = await adminService.listarRecompensas(filtroClinica);
+    setVersao(Date.now());
+    return recompensas;
+  }, [filtroClinica]);
+  const { dados: lista, setDados: setLista, carregando, erro, recarregar } = useConsulta<Recompensa[]>(buscar);
 
   async function onRefresh() {
     setRefreshing(true);
-    await carregar();
+    await recarregar({ manterDados: true });
     setRefreshing(false);
   }
 
@@ -123,7 +118,7 @@ export default function RecompensasScreen() {
         mostrarToast('sucesso', 'Recompensa cadastrada no catálogo');
       }
       limparFormulario();
-      carregar();
+      recarregar({ manterDados: true });
     } catch (e) {
       mostrarToast('erro', mensagemDeErro(e));
     } finally {
@@ -132,11 +127,16 @@ export default function RecompensasScreen() {
   }
 
   async function excluir(r: Recompensa) {
+    if (r.idClinica == null) {
+      mostrarToast('erro', 'Esta recompensa não tem clínica associada. Edite-a para escolher a clínica antes de excluir.');
+      return;
+    }
     const ok = await confirmar(`Excluir a recompensa "${r.nome}"?`, 'Excluir');
     if (!ok) return;
     setRemovendo(r.idRecompensa);
     try {
-      const res = await adminService.removerRecompensa(r.idRecompensa);
+      // A API exige a clínica da recompensa (?idClinica=) e recusa se não for a dela.
+      const res = await adminService.removerRecompensa(r.idRecompensa, r.idClinica);
       if (res?.excluidoDefinitivamente) {
         mostrarToast('sucesso', 'Recompensa excluída');
         setLista((prev) => prev?.filter((x) => x.idRecompensa !== r.idRecompensa) ?? null);
@@ -229,9 +229,25 @@ export default function RecompensasScreen() {
         </View>
       </Card>
 
-      {erro && <Banner tone="error">{erro}</Banner>}
-      {lista === null && !erro && <LoadingBlock />}
-      {lista && lista.length === 0 && <EmptyState icon="gift-outline" title="Nenhuma recompensa cadastrada ainda" />}
+      <Card>
+        <ClinicaSelect
+          label="Filtrar catálogo por clínica"
+          value={filtroClinica}
+          onChange={setFiltroClinica}
+          rotuloTodas="Todas as clínicas"
+          onLimpar={() => setFiltroClinica(null)}
+        />
+      </Card>
+
+      <EstadoConsulta
+        carregando={carregando}
+        erro={erro}
+        vazio={!!lista && lista.length === 0}
+        onTentarNovamente={() => recarregar()}
+        vazioIcone="gift-outline"
+        vazioTitulo={filtroClinica === null ? 'Nenhuma recompensa cadastrada ainda' : 'Nenhuma recompensa nesta clínica'}
+        vazioSubtitulo={filtroClinica === null ? undefined : 'Cadastre uma recompensa para esta clínica ou escolha outra no filtro.'}
+      />
       {lista?.map((r) => (
         <RecordRow key={r.idRecompensa}>
           <View style={s.linhaTopo}>

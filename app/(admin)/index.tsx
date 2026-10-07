@@ -9,7 +9,10 @@ import { Banner } from '../../components/ui/Card';
 import { AppIcon } from '../../components/AppIcon';
 import { AtendimentosDoDia } from '../../components/admin/AtendimentosDoDia';
 import { SaudacaoPainel } from '../../components/admin/SaudacaoPainel';
+import { IndicadoresPainel } from '../../components/admin/IndicadoresPainel';
+import { useConsulta } from '../../hooks/useConsulta';
 import { useIsDesktop } from '../../hooks/useIsDesktop';
+import type { ResumoPainel } from '../../types';
 
 interface Item {
   href: string;
@@ -58,25 +61,36 @@ export default function Dashboard() {
 
   const carregar = useCallback(async () => {
     // Falha vira null (contador "—"), para uma API fora do ar não parecer "0 pendências".
-    const [prescricoes, relatorios, pontos, vets, esteticistas, medicamentos, recompensas] = await Promise.all([
+    // Pontos e recompensas não entram aqui: vêm do resumo do painel, que respeita o filtro de clínica.
+    const [prescricoes, relatorios, vets, esteticistas, medicamentos] = await Promise.all([
       adminService.listarPrescricoesPendentes().catch(() => null),
       adminService.listarRelatoriosPendentes().catch(() => null),
-      adminService.listarPontosPendentes().catch(() => null),
       adminService.listarVeterinarios().catch(() => null),
       adminService.listarProfissionaisEstetica().catch(() => null),
       adminService.listarMedicamentos().catch(() => null),
-      adminService.listarRecompensas().catch(() => null),
     ]);
-    setCounts({
+    setCounts((atual) => ({
+      ...atual,
       prescricoes: prescricoes?.length ?? null,
       relatorios: relatorios?.length ?? null,
-      pontos: pontos?.length ?? null,
       vets: vets?.length ?? null,
       esteticistas: esteticistas?.length ?? null,
       medicamentos: medicamentos?.length ?? null,
-      recompensas: recompensas?.length ?? null,
-    });
+    }));
   }, []);
+
+  // Indicadores de pontos e recompensas: da clínica filtrada ou, sem filtro, totais de todas as clínicas.
+  const [idClinica, setIdClinica] = useState<number | null>(null);
+  const buscarResumo = useCallback(() => adminService.obterResumoPainel(idClinica), [idClinica]);
+  const { dados: resumo, carregando: carregandoResumo, erro: erroResumo, recarregar: recarregarResumo } =
+    useConsulta<ResumoPainel>(buscarResumo, 'Não foi possível carregar os indicadores.');
+
+  // Contadores dos atalhos: os de pontos e recompensas seguem o filtro; "—" enquanto carrega ou se falhar.
+  const contadores: Counts = {
+    ...counts,
+    pontos: resumo?.pontos.lancamentosPendentes ?? null,
+    recompensas: resumo?.recompensas.recompensasTotal ?? null,
+  };
 
   useEffect(() => {
     carregar();
@@ -85,7 +99,7 @@ export default function Dashboard() {
   async function onRefresh() {
     setRefreshing(true);
     setRefreshKey((k) => k + 1);
-    await carregar();
+    await Promise.all([carregar(), recarregarResumo({ manterDados: true })]);
     setRefreshing(false);
   }
 
@@ -102,6 +116,15 @@ export default function Dashboard() {
 
       <SaudacaoPainel />
 
+      <IndicadoresPainel
+        resumo={resumo}
+        carregando={carregandoResumo}
+        erro={erroResumo}
+        onTentarNovamente={() => recarregarResumo()}
+        idClinica={idClinica}
+        onChangeClinica={setIdClinica}
+      />
+
       {/* Desktop: a navegação já está na sidebar, então o painel mostra só a agenda do dia. */}
       {isDesktop ? (
         <AtendimentosDoDia refreshKey={refreshKey} />
@@ -110,14 +133,14 @@ export default function Dashboard() {
           <View style={s.pendingRow}>
             <PendingPill label="Prescrições" value={counts.prescricoes} onPress={() => router.push('/(admin)/prescricoes')} />
             <PendingPill label="Relatórios" value={counts.relatorios} onPress={() => router.push('/(admin)/relatorios-estetica')} />
-            <PendingPill label="Pontos" value={counts.pontos} onPress={() => router.push('/(admin)/pontos')} />
+            <PendingPill label="Pontos" value={contadores.pontos} onPress={() => router.push('/(admin)/pontos')} />
           </View>
 
           <AtendimentosDoDia refreshKey={refreshKey} />
 
           <Text style={s.sectionTitle}>Gerenciar</Text>
           {ITENS.map((item) => {
-            const count = item.countKey ? counts[item.countKey] : null;
+            const count = item.countKey ? contadores[item.countKey] : null;
             return (
               <Pressable
                 key={item.href}

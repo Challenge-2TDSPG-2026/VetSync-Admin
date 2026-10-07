@@ -35,14 +35,14 @@ export default function PrescricoesScreen() {
     setRefreshing(false);
   }
 
-  async function decidir(id: number, aprovado: boolean, idClinica?: number | null) {
+  async function decidir(id: number, aprovado: boolean) {
     if (!aprovado) {
       const ok = await confirmar('Negar esta prescrição? A decisão é definitiva e não poderá ser desfeita.', 'Negar');
       if (!ok) return;
     }
     setProcessando(id);
     try {
-      await adminService.liberarPrescricao(id, aprovado, idClinica);
+      await adminService.liberarPrescricao(id, aprovado);
       mostrarToast('sucesso', aprovado ? 'Prescrição liberada' : 'Prescrição negada', aprovado ? 'O tutor será avisado por e-mail.' : undefined);
       setLista((prev) => prev?.filter((p) => p.idPrescricao !== id) ?? null);
     } catch (e) {
@@ -78,8 +78,8 @@ export default function PrescricoesScreen() {
           <RecordLine label="Veterinário" value={`Dr(a). ${p.nmVeterinario}`} />
           <RecordLine label="Período" value={p.dtFim ? `${p.dtInicio} → ${p.dtFim}` : p.dtInicio} />
           <RecordActions>
-            <Button label="Liberar" variant="approve" size="sm" onPress={() => decidir(p.idPrescricao, true, p.idClinica)} loading={processando === p.idPrescricao} disabled={processando !== null} />
-            <Button label="Negar" variant="deny" size="sm" onPress={() => decidir(p.idPrescricao, false, p.idClinica)} disabled={processando !== null} />
+            <Button label="Liberar" variant="approve" size="sm" onPress={() => decidir(p.idPrescricao, true)} loading={processando === p.idPrescricao} disabled={processando !== null} />
+            <Button label="Negar" variant="deny" size="sm" onPress={() => decidir(p.idPrescricao, false)} disabled={processando !== null} />
           </RecordActions>
         </RecordRow>
       ))}
