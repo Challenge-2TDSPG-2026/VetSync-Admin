@@ -106,6 +106,14 @@ export const adminService = {
   criarAdmin(nome: string, email: string) {
     return api.post<AdminCriado>('/admins', { nome, email });
   },
+  convidarDonoClinica(idClinica: number, nome: string, email: string) {
+    return api.post<{ idAdmin: number; nome: string; email: string; cargo: string }>(
+      `/admin-global/clinicas/${idClinica}/dono`, { nome, email });
+  },
+  criarClinica(nome: string, cnpj: string, cidade: string, uf: string) {
+    return api.post<{ idClinica: number; nomeClinica: string; statusContrato: string }>(
+      '/admin-global/clinicas', { nome, cnpj, cidade, uf });
+  },
   // ---- Vínculo de clínica ----
   async listarClinicas(): Promise<Clinica[]> {
     const lista = await api.get<ClinicaApi[]>('/vinculos-clinica/clinicas');
