@@ -8,7 +8,7 @@ App Expo (React Native + Expo Router + TypeScript) para o perfil **ADMIN** do ba
 | --- | --- | --- |
 | Login / sessão | `POST /auth/login`, `GET /auth/me`, `POST /auth/logout` | `app/login.tsx` |
 | Painel | agrega as filas e catálogos abaixo | `app/(admin)/index.tsx` |
-| Veterinários | `GET/POST /veterinarios` | `veterinarios.tsx` |
+| Veterinários | `GET/POST/PUT /veterinarios` | `veterinarios.tsx` |
 | Profissionais de estética | `GET/POST /profissionais-estetica` | `estetica.tsx` |
 | Administradores | `POST /admins` | `administradores.tsx` |
 | Prescrições | `GET /prescricoes`, `PATCH /prescricoes/{id}/liberar` | `prescricoes.tsx` |
@@ -16,9 +16,12 @@ App Expo (React Native + Expo Router + TypeScript) para o perfil **ADMIN** do ba
 | Medicamentos | `GET/POST/PUT/DELETE /medicamentos` | `medicamentos.tsx` |
 | Tipos de evento | `GET /tipos-evento` (somente leitura) | `tipos-evento.tsx` |
 
-Duas limitações vêm da própria API, não do app:
-- **Sem endpoint para listar clínicas** — o ID da clínica é digitado à mão ao cadastrar vet/esteticista.
+Uma limitação vem da própria API, não do app:
 - **Sem endpoint para listar admins existentes** — a tela de Administradores mostra só os criados na sessão atual.
+
+No cadastro de veterinários, o administrador informa nome, e-mail, clínica ativa e especialidade
+opcional. A API gera o CRM e a senha temporária, e o app exibe a senha uma única vez na
+confirmação do cadastro; o e-mail e o CRM não podem ser alterados depois.
 
 ## Como rodar
 

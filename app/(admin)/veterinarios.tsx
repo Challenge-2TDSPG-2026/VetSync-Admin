@@ -62,21 +62,37 @@ export default function VeterinariosScreen() {
   }
 
   async function handleSubmit() {
+    const nomeNormalizado = nome.trim();
+    const emailNormalizado = email.trim().toLowerCase();
+
+    if (!nomeNormalizado) {
+      mostrarToast('erro', 'Informe o nome completo do veterinário.');
+      return;
+    }
+    if (!editando && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado)) {
+      mostrarToast('erro', 'Informe um e-mail válido para enviar o acesso.');
+      return;
+    }
+    if (!idClinica) {
+      mostrarToast('erro', 'Selecione uma clínica com contrato ativo.');
+      return;
+    }
+
     setSalvando(true);
     setCriado(null);
     try {
       if (editando) {
-        await adminService.atualizarVeterinario(editando.idVeterinario, nome.trim(), idClinica as number, especialidade);
-        mostrarToast('sucesso', 'Veterinário atualizado', nome.trim());
+        await adminService.atualizarVeterinario(editando.idVeterinario, nomeNormalizado, idClinica, especialidade);
+        mostrarToast('sucesso', 'Veterinário atualizado', nomeNormalizado);
         limparFormulario();
-        carregar();
+        await carregar();
         return;
       }
-      const res = await adminService.criarVeterinario(nome, email, idClinica as number, especialidade);
+      const res = await adminService.criarVeterinario(nomeNormalizado, emailNormalizado, idClinica, especialidade);
       mostrarToast('sucesso', `Veterinário ${res.nome} cadastrado`, `CRM ${res.crm}`);
       setCriado(res);
       limparFormulario();
-      carregar();
+      await carregar();
     } catch (e) {
       mostrarToast('erro', mensagemDeErro(e));
     } finally {
@@ -108,7 +124,7 @@ export default function VeterinariosScreen() {
         {!editando && (
           <Field label="E-mail" value={email} onChangeText={setEmail} placeholder="email@clinica.com" autoCapitalize="none" keyboardType="email-address" />
         )}
-        <ClinicaSelect value={idClinica} onChange={setIdClinica} />
+        <ClinicaSelect value={idClinica} onChange={setIdClinica} somenteAtivas={!editando} />
         <Field label="Especialidade (opcional)" value={especialidade} onChangeText={setEspecialidade} placeholder="Ex.: Dermatologia" />
 
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
