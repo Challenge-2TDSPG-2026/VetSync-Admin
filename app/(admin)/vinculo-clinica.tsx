@@ -100,7 +100,7 @@ export default function VinculoClinicaScreen() {
 
   function escolherClinica(clinica: Clinica) {
     setSelecionada(clinica);
-    setEmissao(null);
+    setEmissao(clinica.codigo ? { idClinica: clinica.idClinica, nomeClinica: clinica.nomeClinica, codigo: clinica.codigo } : null);
     setErroEmissao(null);
   }
 
@@ -162,7 +162,7 @@ export default function VinculoClinicaScreen() {
       mostrarToast(
         'sucesso',
         substituindo ? 'Código substituído' : 'Código de vínculo emitido',
-        'Guarde ou compartilhe agora: ele não pode ser recuperado depois.'
+        'O código permanece disponível nesta tela e na listagem da clínica enquanto estiver ativo.'
       );
       await carregar();
     } catch (erro) {
@@ -368,7 +368,7 @@ export default function VinculoClinicaScreen() {
                     ? 'O código já emitido está suspenso porque o contrato está inativo. Ative o contrato para voltar a emitir.'
                     : 'Ative o contrato da clínica para poder emitir o código e o QR code.'
                   : selecionada.codigoAtivo
-                    ? 'Existe um código ativo. Por segurança ele não pode ser exibido de novo. Se suspeitar que foi comprometido, substitua-o: o código atual deixa de funcionar na hora para novos vínculos. Quem já se vinculou continua vinculado. O código não expira por tempo.'
+                    ? 'Código ativo disponível abaixo. Se suspeitar que foi comprometido, substitua-o: o código atual deixa de funcionar na hora para novos vínculos. Quem já se vinculou continua vinculado. O código não expira por tempo.'
                     : 'Ainda não há código ativo. Emita um para entregar ao tutor. O código não expira por tempo.'}
               </Text>
               <Button
@@ -429,7 +429,7 @@ export default function VinculoClinicaScreen() {
             <Button label="Compartilhar QR" onPress={compartilharQr} variant="ghost" loading={exportando} style={s.acao} />
             <Button label="Imprimir QR" onPress={imprimirQr} variant="ghost" loading={exportando} style={s.acao} />
           </View>
-          <Text style={s.aviso}>Por segurança, o código fica disponível apenas enquanto esta tela estiver aberta. Recarregar ou sair exige uma nova emissão.</Text>
+          <Text style={s.aviso}>O código permanece disponível para esta clínica enquanto estiver ativo.</Text>
         </Card>
       ) : null}
     </Screen>

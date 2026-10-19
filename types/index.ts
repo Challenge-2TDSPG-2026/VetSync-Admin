@@ -40,7 +40,7 @@ export interface AdminCriado {
 }
 
 export type StatusDecisao = 'SOLICITADO' | 'LIBERADO' | 'NEGADO';
-/** Código legível apenas no momento da emissão; não é recuperável depois pela API. */
+/** Código vigente da clínica, exibido para o administrador enquanto estiver ativo. */
 export interface CodigoVinculoClinica {
   idClinica: number;
   nomeClinica: string;
@@ -64,6 +64,7 @@ export interface ClinicaApi {
   codigoAtivo?: boolean;
   /** ISO-8601; quando o código vigente foi emitido (null se não há código). */
   codigoEmitidoEm?: string | null;
+  codigo?: string | null;
 }
 
 /** Clínica disponível para administração, já com a situação do contrato e do código. */
@@ -73,10 +74,11 @@ export interface Clinica {
   /** true somente com contrato confirmado. Clínica nova/sem informação é tratada como inativa. */
   contratoAtivo: boolean;
   statusContrato: StatusContrato;
-  /** Existe um código de vínculo vigente (o valor em si nunca é devolvido pela API). */
+  /** Existe um código de vínculo vigente. */
   codigoAtivo: boolean;
   /** ISO-8601; quando o código vigente foi emitido (null se não há código). */
   codigoEmitidoEm: string | null;
+  codigo: string | null;
 }
 
 

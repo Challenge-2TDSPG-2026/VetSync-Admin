@@ -99,6 +99,7 @@ function normalizarClinica(c: ClinicaApi): Clinica {
     statusContrato: contratoAtivo ? 'ATIVO' : 'INATIVO',
     codigoAtivo: c.codigoAtivo === true,
     codigoEmitidoEm: c.codigoEmitidoEm ?? null,
+    codigo: c.codigo ?? null,
   };
 }
 
