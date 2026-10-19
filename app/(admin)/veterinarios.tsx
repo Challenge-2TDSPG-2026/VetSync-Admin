@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { adminService } from '../../services/adminService';
-import type { NovoUsuarioResposta, Veterinario } from '../../types';
+import type { Veterinario } from '../../types';
 import { mensagemDeErro } from '../../utils/erro';
 import { mostrarToast } from '../../components/ui/Toast';
 import { Screen, LoadingBlock } from '../../components/Screen';
@@ -18,10 +18,10 @@ export default function VeterinariosScreen() {
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
   const [idClinica, setIdClinica] = useState<number | null>(null);
   const [especialidade, setEspecialidade] = useState('');
   const [salvando, setSalvando] = useState(false);
-  const [criado, setCriado] = useState<NovoUsuarioResposta | null>(null);
   const [editando, setEditando] = useState<Veterinario | null>(null);
 
   const carregar = useCallback(async () => {
@@ -48,12 +48,12 @@ export default function VeterinariosScreen() {
     setEditando(null);
     setNome('');
     setEmail('');
+    setSenha('');
     setIdClinica(null);
     setEspecialidade('');
   }
 
   function iniciarEdicao(v: Veterinario) {
-    setCriado(null);
     setEditando(v);
     setNome(v.nmVeterinario);
     setIdClinica(v.idClinica ?? null);
@@ -70,7 +70,11 @@ export default function VeterinariosScreen() {
       return;
     }
     if (!editando && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado)) {
-      mostrarToast('erro', 'Informe um e-mail válido para enviar o acesso.');
+      mostrarToast('erro', 'Informe um e-mail válido para criar o acesso.');
+      return;
+    }
+    if (!editando && senha.length < 8) {
+      mostrarToast('erro', 'A senha deve ter pelo menos 8 caracteres.');
       return;
     }
     if (!idClinica) {
@@ -79,7 +83,6 @@ export default function VeterinariosScreen() {
     }
 
     setSalvando(true);
-    setCriado(null);
     try {
       if (editando) {
         await adminService.atualizarVeterinario(editando.idVeterinario, nomeNormalizado, idClinica, especialidade);
@@ -88,9 +91,8 @@ export default function VeterinariosScreen() {
         await carregar();
         return;
       }
-      const res = await adminService.criarVeterinario(nomeNormalizado, emailNormalizado, idClinica, especialidade);
+      const res = await adminService.criarVeterinario(nomeNormalizado, emailNormalizado, senha, idClinica, especialidade);
       mostrarToast('sucesso', `Veterinário ${res.nome} cadastrado`, `CRM ${res.crm}`);
-      setCriado(res);
       limparFormulario();
       await carregar();
     } catch (e) {
@@ -104,7 +106,7 @@ export default function VeterinariosScreen() {
     <Screen
       eyebrow="Equipe clínica"
       title="Veterinários"
-      desc="O CRM interno e a senha temporária são gerados pela API e enviados por e-mail."
+      desc="Cadastre o e-mail e defina a senha de acesso diretamente pelo painel."
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
@@ -114,15 +116,20 @@ export default function VeterinariosScreen() {
 
         {editando && <Banner tone="info">{editando.dsEmail} · o e-mail e o CRM não podem ser alterados.</Banner>}
 
-        {criado && (
-          <Banner tone="info">
-            Senha temporária de {criado.email}: {criado.senhaTemporaria}
-          </Banner>
-        )}
-
         <Field label="Nome" value={nome} onChangeText={setNome} placeholder="Nome completo" />
         {!editando && (
-          <Field label="E-mail" value={email} onChangeText={setEmail} placeholder="email@clinica.com" autoCapitalize="none" keyboardType="email-address" />
+          <>
+            <Field label="E-mail" value={email} onChangeText={setEmail} placeholder="email@clinica.com" autoCapitalize="none" keyboardType="email-address" />
+            <Field
+              label="Senha"
+              value={senha}
+              onChangeText={setSenha}
+              placeholder="Mínimo de 8 caracteres"
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+            />
+          </>
         )}
         <ClinicaSelect value={idClinica} onChange={setIdClinica} somenteAtivas={!editando} />
         <Field label="Especialidade (opcional)" value={especialidade} onChangeText={setEspecialidade} placeholder="Ex.: Dermatologia" />
@@ -132,7 +139,7 @@ export default function VeterinariosScreen() {
             label={salvando ? 'Salvando…' : editando ? 'Salvar alterações' : 'Cadastrar veterinário'}
             onPress={handleSubmit}
             loading={salvando}
-            disabled={!nome.trim() || !idClinica || (!editando && !email)}
+            disabled={!nome.trim() || !idClinica || (!editando && (!email || senha.length < 8))}
             style={{ flex: 1 }}
           />
           {editando && <Button label="Cancelar" variant="ghost" onPress={limparFormulario} />}
