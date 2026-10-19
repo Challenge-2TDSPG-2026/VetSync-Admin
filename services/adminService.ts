@@ -27,6 +27,7 @@ import type {
   TipoEvento,
   TipoVacina,
   Veterinario,
+  VeterinarioCadastroResposta,
 } from '../types';
 
 type ValorQuery = string | number | boolean | null | undefined;
@@ -138,7 +139,7 @@ export const adminService = {
     return filtrarPorClinicaLocal(await api.get<Veterinario[]>('/veterinarios'), idClinica);
   },
   criarVeterinario(nome: string, email: string, senha: string, idClinica: number, especialidade?: string) {
-    return api.post<NovoUsuarioResposta>('/veterinarios', {
+    return api.post<VeterinarioCadastroResposta>('/veterinarios', {
       nome,
       email,
       senha,

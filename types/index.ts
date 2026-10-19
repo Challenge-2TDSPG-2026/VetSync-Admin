@@ -16,6 +16,13 @@ export interface NovoUsuarioResposta {
   senhaTemporaria: string;
 }
 
+export interface VeterinarioCadastroResposta {
+  idVeterinario: number;
+  nome: string;
+  email: string;
+  crm: string;
+}
+
 export interface ProfissionalEstetica {
   idProfissionalEstetica: number;
   nmProfissionalEstetica: string;

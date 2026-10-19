@@ -19,9 +19,9 @@ App Expo (React Native + Expo Router + TypeScript) para o perfil **ADMIN** do ba
 Uma limitação vem da própria API, não do app:
 - **Sem endpoint para listar admins existentes** — a tela de Administradores mostra só os criados na sessão atual.
 
-No cadastro de veterinários, o administrador informa nome, e-mail, clínica ativa e especialidade
-opcional. A API gera o CRM e a senha temporária, e o app exibe a senha uma única vez na
-confirmação do cadastro; o e-mail e o CRM não podem ser alterados depois.
+No cadastro de veterinários, o administrador informa nome, e-mail, senha, clínica ativa e
+especialidade opcional. A API gera o CRM e armazena a senha definida pelo administrador; nenhuma
+senha é enviada por e-mail ou devolvida na resposta. O e-mail e o CRM não podem ser alterados depois.
 
 ## Como rodar
 
@@ -47,7 +47,7 @@ curl -X POST http://localhost:8080/admins/bootstrap \
   -d '{"nome":"Admin Geral","email":"admin@vetsync.com","chave":"boot-secret-dev-12345"}'
 ```
 
-A senha temporária vem na resposta — use-a para logar no app.
+Use a senha definida no formulário para logar no app mobile.
 
 ## Estrutura
 
