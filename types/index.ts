@@ -36,7 +36,6 @@ export interface AdminCriado {
   idAdmin: number;
   nome: string;
   email: string;
-  senhaTemporaria: string;
 }
 
 export type StatusDecisao = 'SOLICITADO' | 'LIBERADO' | 'NEGADO';

@@ -12,6 +12,7 @@ import { ClinicaSelect } from '../../components/ui/ClinicaSelect';
 export default function AdministradoresScreen() {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [criados, setCriados] = useState<AdminCriado[]>([]);
   const [idClinica, setIdClinica] = useState<number | null>(null);
@@ -27,13 +28,24 @@ export default function AdministradoresScreen() {
   const [clinicasVersao, setClinicasVersao] = useState(0);
 
   async function handleSubmit() {
+    const nomeNormalizado = nome.trim();
+    const emailNormalizado = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado)) {
+      mostrarToast('erro', 'Informe um e-mail válido para criar o acesso.');
+      return;
+    }
+    if (senha.length < 8) {
+      mostrarToast('erro', 'A senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
     setSalvando(true);
     try {
-      const res = await adminService.criarAdmin(nome, email);
+      const res = await adminService.criarAdmin(nomeNormalizado, emailNormalizado, senha);
       mostrarToast('sucesso', `Admin ${res.nome} cadastrado`);
       setCriados((prev) => [res, ...prev]);
       setNome('');
       setEmail('');
+      setSenha('');
     } catch (e) {
       mostrarToast('erro', mensagemDeErro(e));
     } finally {
@@ -90,16 +102,25 @@ export default function AdministradoresScreen() {
 
       <Card>
         <CardTitle>Cadastrar administrador</CardTitle>
-        <CardDesc>Senha temporária enviada por e-mail.</CardDesc>
+        <CardDesc>Informe o e-mail e defina a senha de acesso do novo administrador.</CardDesc>
 
         <Field label="Nome" value={nome} onChangeText={setNome} placeholder="Nome completo" />
         <Field label="E-mail" value={email} onChangeText={setEmail} placeholder="admin@vetsync.com" autoCapitalize="none" keyboardType="email-address" />
+        <Field
+          label="Senha"
+          value={senha}
+          onChangeText={setSenha}
+          placeholder="Mínimo de 8 caracteres"
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry
+        />
 
         <Button
           label={salvando ? 'Cadastrando…' : 'Cadastrar administrador'}
           onPress={handleSubmit}
           loading={salvando}
-          disabled={!nome || !email}
+          disabled={!nome.trim() || !email.trim() || senha.length < 8}
         />
       </Card>
 
@@ -124,7 +145,7 @@ export default function AdministradoresScreen() {
         <RecordRow key={a.idAdmin}>
           <RecordHeader id={a.idAdmin} title={a.nome} />
           <RecordLine label="E-mail" value={a.email} />
-          <RecordLine label="Senha temporária" value={a.senhaTemporaria} />
+          <RecordLine label="Acesso" value="Administrador global · senha definida no cadastro" />
         </RecordRow>
       ))}
     </Screen>

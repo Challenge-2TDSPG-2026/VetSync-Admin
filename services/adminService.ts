@@ -105,8 +105,8 @@ function normalizarClinica(c: ClinicaApi): Clinica {
 
 export const adminService = {
   // ---- Administradores ----
-  criarAdmin(nome: string, email: string) {
-    return api.post<AdminCriado>('/admins', { nome, email });
+  criarAdmin(nome: string, email: string, senha: string) {
+    return api.post<AdminCriado>('/admins', { nome, email, senha });
   },
   convidarDonoClinica(idClinica: number, nome: string, email: string) {
     return api.post<{ idAdmin: number; nome: string; email: string; cargo: string }>(
