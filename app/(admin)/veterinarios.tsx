@@ -19,6 +19,7 @@ export default function VeterinariosScreen() {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [crmv, setCrmv] = useState('');
   const [idClinica, setIdClinica] = useState<number | null>(null);
   const [especialidade, setEspecialidade] = useState('');
   const [salvando, setSalvando] = useState(false);
@@ -49,6 +50,7 @@ export default function VeterinariosScreen() {
     setNome('');
     setEmail('');
     setSenha('');
+    setCrmv('');
     setIdClinica(null);
     setEspecialidade('');
   }
@@ -77,6 +79,10 @@ export default function VeterinariosScreen() {
       mostrarToast('erro', 'A senha deve ter pelo menos 8 caracteres.');
       return;
     }
+    if (!editando && !crmv.trim()) {
+      mostrarToast('erro', 'Informe o CRMV do veterinário.');
+      return;
+    }
     if (!idClinica) {
       mostrarToast('erro', 'Selecione uma clínica com contrato ativo.');
       return;
@@ -91,8 +97,8 @@ export default function VeterinariosScreen() {
         await carregar();
         return;
       }
-      const res = await adminService.criarVeterinario(nomeNormalizado, emailNormalizado, senha, idClinica, especialidade);
-      mostrarToast('sucesso', `Veterinário ${res.nome} cadastrado`, `CRM ${res.crm}`);
+      const res = await adminService.criarVeterinario(nomeNormalizado, emailNormalizado, senha, crmv.trim(), idClinica, especialidade);
+      mostrarToast('sucesso', `Veterinário ${res.nome} cadastrado`, `CRMV ${res.crm}`);
       limparFormulario();
       await carregar();
     } catch (e) {
@@ -121,6 +127,13 @@ export default function VeterinariosScreen() {
           <>
             <Field label="E-mail" value={email} onChangeText={setEmail} placeholder="email@clinica.com" autoCapitalize="none" keyboardType="email-address" />
             <Field
+              label="CRMV"
+              value={crmv}
+              onChangeText={setCrmv}
+              placeholder="Ex.: SP-12345"
+              autoCapitalize="characters"
+            />
+            <Field
               label="Senha"
               value={senha}
               onChangeText={setSenha}
@@ -139,7 +152,7 @@ export default function VeterinariosScreen() {
             label={salvando ? 'Salvando…' : editando ? 'Salvar alterações' : 'Cadastrar veterinário'}
             onPress={handleSubmit}
             loading={salvando}
-            disabled={!nome.trim() || !idClinica || (!editando && (!email || senha.length < 8))}
+            disabled={!nome.trim() || !idClinica || (!editando && (!email || !crmv.trim() || senha.length < 8))}
             style={{ flex: 1 }}
           />
           {editando && <Button label="Cancelar" variant="ghost" onPress={limparFormulario} />}

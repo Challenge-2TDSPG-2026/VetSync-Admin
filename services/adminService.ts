@@ -139,11 +139,12 @@ export const adminService = {
   async listarVeterinarios(idClinica?: IdClinicaFiltro) {
     return filtrarPorClinicaLocal(await api.get<Veterinario[]>('/veterinarios'), idClinica);
   },
-  criarVeterinario(nome: string, email: string, senha: string, idClinica: number, especialidade?: string) {
+  criarVeterinario(nome: string, email: string, senha: string, crmv: string, idClinica: number, especialidade?: string) {
     return api.post<VeterinarioCadastroResposta>('/veterinarios', {
       nome,
       email,
       senha,
+      crmv,
       idClinica,
       ...(especialidade?.trim() ? { especialidade: especialidade.trim() } : {}),
     });
