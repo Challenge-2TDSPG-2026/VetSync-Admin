@@ -104,6 +104,19 @@ function normalizarClinica(c: ClinicaApi): Clinica {
 }
 
 export const adminService = {
+  // ---- Mensagens com tutores ----
+  listarConversasClinica() {
+    return api.get<{ idConversa: number; idClinica: number; nomeClinica: string; idTutor: number; nomeTutor: string; criadaEm: string }[]>('/mensagens-clinica/conversas');
+  },
+  iniciarConversaClinica(idTutor: number) {
+    return api.post<{ idConversa: number; idClinica: number; nomeClinica: string; idTutor: number; nomeTutor: string; criadaEm: string }>('/mensagens-clinica/conversas', { idTutor });
+  },
+  listarMensagensClinica(id: number) {
+    return api.get<{ idMensagem: number; idConversa: number; remetente: 'TUTOR' | 'CLINICA'; texto: string; enviadaEm: string }[]>(`/mensagens-clinica/conversas/${id}/mensagens`);
+  },
+  enviarMensagemClinica(id: number, texto: string) {
+    return api.post(`/mensagens-clinica/conversas/${id}/mensagens`, { texto });
+  },
   // ---- Administradores ----
   criarAdmin(nome: string, email: string, senha: string) {
     return api.post<AdminCriado>('/admins', { nome, email, senha });
