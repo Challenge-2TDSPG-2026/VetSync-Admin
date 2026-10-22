@@ -26,6 +26,7 @@ export default function AdminLayout() {
           }}
         >
           <Stack.Screen name="index" options={{ title: 'VetSync-Admin' }} />
+          <Stack.Screen name="mensagens" options={{ title: 'Mensagens dos tutores' }} />
           <Stack.Screen name="prescricoes" options={{ title: 'Prescrições' }} />
           <Stack.Screen name="relatorios-estetica" options={{ title: 'Relatórios de estética' }} />
           <Stack.Screen name="pontos" options={{ title: 'Pontos' }} />

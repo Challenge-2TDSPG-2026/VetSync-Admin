@@ -33,6 +33,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: '/(admin)/prescricoes', route: 'prescricoes', icon: 'medkit-outline', label: 'Prescrições' },
       { href: '/(admin)/relatorios-estetica', route: 'relatorios-estetica', icon: 'document-text-outline', label: 'Relatórios de estética' },
       { href: '/(admin)/pontos', route: 'pontos', icon: 'sparkles-outline', label: 'Pontos' },
+      { href: '/(admin)/mensagens', route: 'mensagens', icon: 'chatbubbles-outline', label: 'Mensagens dos tutores' },
     ],
   },
   {

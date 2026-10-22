@@ -34,6 +34,7 @@ interface Counts {
 }
 
 const ITENS: Item[] = [
+  { href: '/(admin)/mensagens', icon: 'chatbubbles-outline', label: 'Mensagens dos tutores', desc: 'Converse com os tutores da clínica' },
   { href: '/(admin)/prescricoes', icon: 'medkit-outline', label: 'Prescrições', desc: 'Fila de aprovação', countKey: 'prescricoes', accent: CORES.aviso },
   { href: '/(admin)/relatorios-estetica', icon: 'document-text-outline', label: 'Relatórios de estética', desc: 'Fila de aprovação', countKey: 'relatorios', accent: CORES.aviso },
   { href: '/(admin)/pontos', icon: 'sparkles-outline', label: 'Pontos', desc: 'Lançamentos pendentes', countKey: 'pontos', accent: CORES.aviso },
