@@ -1,5 +1,9 @@
 # VetSync-Admin
 
+O app Expo atende o perfil **ADMIN** do backend VetSync.
+
+A página web segura para aceite de convites fica em [`site/`](site/README.md) e tem publicação própria, separada do app Expo.
+
 App Expo (React Native + Expo Router + TypeScript) para o perfil **ADMIN** do backend [vetSync-Java](https://github.com/Challenge-2TDSPG-2026/vetSync-Java). Mesma stack, padrões e paleta do [vetSync-Mobile](https://github.com/Challenge-2TDSPG-2026/vetSync-Mobile) — roda em Android, iOS e web a partir do mesmo código.
 
 ## O que cobre
